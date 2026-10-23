@@ -126,6 +126,8 @@
 #dash-root .ig-det .ig-table th, #dash-root .ig-det .ig-table td { background: transparent; }
 #dash-root .ig-det .ig-table thead th { position: sticky; top: 0; background: var(--color-panel); }
 #dash-root .ig-det .ig-table td:last-child, #dash-root .ig-det .ig-table th:last-child { text-align: right; }
+#dash-root .ig-det-btn { font: inherit; font-size: var(--cds-font-size-body); cursor: pointer; padding: 2px var(--cds-pad-sm); border-radius: var(--cds-radius); border: 1px solid var(--ig-lime); background: transparent; color: inherit; white-space: nowrap; }
+#dash-root .ig-det-btn:hover { background: var(--ig-tint); }
 #dash-root .ig-det-empty { padding: var(--cds-pad-sm) var(--cds-pad-lg) !important; font-style: italic; }
 #dash-root .ig-table tbody tr.click:hover td { background: var(--ig-tint); }
 #dash-root .ig-dot { display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; margin-right: .4rem; vertical-align: 0; }
@@ -338,9 +340,10 @@
       <p class="ig-sub">Millones · solo <span class="ig-mes-l">—</span> · <span class="ig-filt-l">—</span> · clic en una cuenta para ver su detalle por descripción, tercero y valor · clic en un encabezado para ordenar</p>
       <p class="ig-note ig-grp-hint">Elige un grupo (clic en la tabla de grupos o en el filtro Grupo) para ver el detalle por cuenta contable.</p>
       <p class="ig-hsub ig-grp-on" style="padding-left:0;margin:0 0 var(--cds-gap-sm)">Algunas cuentas del presupuesto tienen otro nombre que la cuenta contable (por ejemplo «Cargue y descargue carga masiva» vs «Cargue y descargue»): compara el total en la tabla de grupos.</p>
+      <p class="ig-grp-on" style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="mes-cta-all">Expandir todas las cuentas</button></p>
       <div class="ig-tablewrap ig-grp-on">
         <table class="ig-table" id="mes-cuentas" data-source="por_cuenta" data-row-key="periodo,mes,responsable,clase,unidad,grupo,cuenta">
-          <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th></tr></thead>
+          <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th><th data-field="_det">Detalle</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -522,7 +525,7 @@
 
   dash.calc('pyg', {
     title: 'Estado de resultados',
-    description: 'P&G por mes y acumulado, total y por unidad: ingresos operacionales (ppto original por unidad) menos costos y gastos (ppto ajustado), más ingresos no operacionales (sin ppto). Margen neto = utilidad del período / ingresos operacionales. Variación positiva = favorable.',
+    description: 'P&G por mes y acumulado, total y por unidad: ingresos operacionales (ppto original por unidad) menos costos y gastos (ppto ajustado), más ingresos no operacionales (sin ppto). Margen operacional = utilidad operacional / ingresos operacionales. Margen neto = utilidad del período / ingresos operacionales. Variación positiva = favorable.',
     inputs: ['ejec_ppto', 'ingresos', 'ppto_ingresos'],
     fn: (ejec_ppto, ingresos, ppto_ingresos) => {
       const base = new Map();
@@ -553,6 +556,8 @@
           out.push({ periodo, mes, unidad, concepto, orden, presupuesto: p, ejecucion: e, var: v, var_pct: p ? v / Math.abs(p) : null, cumplimiento: p ? e / p : null });
         });
         const mp = ip ? (ip - tot[1]) / ip : null, me = ie ? (ie + inop - tot[0]) / ie : null;
+        const mop = mp, meo = ie ? (ie - tot[0]) / ie : null;
+        out.push({ periodo, mes, unidad, concepto: 'Margen operacional', orden: 7.5, presupuesto: mop, ejecucion: meo, var: mop == null || meo == null ? null : meo - mop, var_pct: null, cumplimiento: null });
         out.push({ periodo, mes, unidad, concepto: 'Margen neto', orden: 10, presupuesto: mp, ejecucion: me, var: mp == null || me == null ? null : me - mp, var_pct: null, cumplimiento: null });
       }
       return out;
@@ -795,7 +800,8 @@
       const tr = document.createElement('tr');
       tr.dataset.key = [r.periodo, r.mes, r.unidad, r.concepto].map(enc).join(',');
       if (r.concepto.startsWith('Utilidad')) tr.className = 'hl';
-      [[r.concepto], [M(r.presupuesto)], [M(r.ejecucion)], [Ms(r.var), tone(r.var)], [P(r.var_pct, true), tone(r.var), 'hide-sm']].forEach(([t, c, h]) => {
+      const mg = r.concepto === 'Margen operacional';
+      (mg ? [[r.concepto], [P(r.presupuesto)], [P(r.ejecucion)], [isN(r.var) ? PTS(r.var) : '—', tone(r.var)], ['', '', 'hide-sm']] : [[r.concepto], [M(r.presupuesto)], [M(r.ejecucion)], [Ms(r.var), tone(r.var)], [P(r.var_pct, true), tone(r.var), 'hide-sm']]).forEach(([t, c, h]) => {
         const td = document.createElement('td'); td.textContent = t; td.className = [c, h].filter(Boolean).join(' '); tr.append(td);
       });
       return tr;
@@ -803,12 +809,12 @@
   }
 
   function pygKpis(box, rows, w) {
-    const defs = [['Ingresos', 'Ingresos'], ['Costos y gastos', 'Costos y gastos'], ['Utilidad del período', 'Utilidad'], ['Margen neto', 'Margen neto']];
+    const defs = [['Ingresos', 'Ingresos'], ['Costos y gastos', 'Costos y gastos'], ['Utilidad del período', 'Utilidad'], ['Margen operacional', 'Margen operacional'], ['Margen neto', 'Margen neto']];
     if (!box.children.length) defs.forEach(([c, lbl]) => {
       const card = document.createElement('div'); card.className = 'ig-card ig-kpi';
       const l = document.createElement('div'); l.className = 'ig-lbl'; l.textContent = lbl;
       const n = document.createElement('div'); n.className = 'ig-num dash-skeleton'; n.dataset.source = 'pyg'; n.dataset.field = 'ejecucion';
-      const d = document.createElement('div'); d.className = 'ig-delta'; d.dataset.source = 'pyg'; d.dataset.field = c === 'Margen neto' ? 'var' : 'var_pct';
+      const d = document.createElement('div'); d.className = 'ig-delta'; d.dataset.source = 'pyg'; d.dataset.field = c.startsWith('Margen') ? 'var' : 'var_pct';
       const rf = document.createElement('div'); rf.className = 'ig-ref'; rf.append('Ppto: ');
       const rs = document.createElement('span'); rs.dataset.source = 'pyg'; rs.dataset.field = 'presupuesto'; rf.append(rs);
       n.textContent = d.textContent = rs.textContent = '—';
@@ -819,7 +825,7 @@
       card.querySelectorAll('[data-source]').forEach((el) => el.setAttribute('data-where', w(c)));
       const n = card.querySelector('.ig-num'), d = card.querySelector('.ig-delta'), rs = card.querySelector('.ig-ref span');
       if (!r) { [n, d, rs].forEach((e) => { e.textContent = '—'; }); return; }
-      if (c === 'Margen neto') { setText(n, P(r.ejecucion)); setText(d, isN(r.var) ? PTS(r.var) + ' vs. ppto' : '', tone(r.var)); setText(rs, P(r.presupuesto)); }
+      if (c.startsWith('Margen')) { setText(n, P(r.ejecucion)); setText(d, isN(r.var) ? PTS(r.var) + ' vs. ppto' : '', tone(r.var)); setText(rs, P(r.presupuesto)); }
       else {
         setText(n, M(r.ejecucion));
         const txt = !isN(r.var_pct) ? '' : c === 'Costos y gastos' ? P(Math.abs(r.var_pct)) + (r.var >= 0 ? ' bajo ppto' : ' sobre ppto') : P(r.var_pct, true) + ' vs. ppto';
@@ -978,7 +984,9 @@
       const keys = ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'];
       if (tbl.id !== 'mes-cuentas') { table(tbl, rows, keys, [['cuenta', (v) => v], ...costCols], sorts[tbl.id]); return; }
       const ok = (r) => openCta.has(mes + '|' + grp + '|' + r.cuenta);
-      table(tbl, rows, keys, [['cuenta', (v, r) => (ok(r) ? '▾ ' : '▸ ') + v], ...costCols], sorts[tbl.id], (r) => { const k = mes + '|' + grp + '|' + r.cuenta; openCta.has(k) ? openCta.delete(k) : openCta.add(k); dash.setParams({}); });
+      const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
+      const all = $('#mes-cta-all'); if (all) { const allOpen = rows.length && rows.every(ok); all.textContent = allOpen ? 'Contraer todas las cuentas' : 'Expandir todas las cuentas'; all.onclick = () => { rows.forEach((r) => { const k = mes + '|' + grp + '|' + r.cuenta; allOpen ? openCta.delete(k) : openCta.add(k); }); dash.setParams({}); }; }
+      table(tbl, rows, keys, [['cuenta', (v, r) => (ok(r) ? '▾ ' : '▸ ') + v], ...costCols, ['_det', btn]], sorts[tbl.id], (r) => { const k = mes + '|' + grp + '|' + r.cuenta; openCta.has(k) ? openCta.delete(k) : openCta.add(k); dash.setParams({}); });
       const trs = [...tbl.querySelectorAll('tbody > tr')], ncols = tbl.querySelectorAll('thead th').length;
       for (let i = rows.length - 1; i >= 0; i--) if (ok(rows[i]) && trs[i]) trs[i].after(detalleRow(rows[i].cuenta, ncols));
     };
