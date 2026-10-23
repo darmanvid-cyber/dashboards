@@ -520,7 +520,7 @@
 
   dash.calc('pyg', {
     title: 'Estado de resultados',
-    description: 'P&G por mes y acumulado, total y por unidad: ingresos operacionales (ppto original por unidad) menos costos y gastos (ppto ajustado), más ingresos no operacionales (sin ppto). Margen neto = utilidad del período / ingresos operacionales. Variación positiva = favorable.',
+    description: 'P&G por mes y acumulado, total y por unidad: ingresos operacionales (ppto original por unidad) menos costos y gastos (ppto ajustado), más ingresos no operacionales (sin ppto). Margen operacional = utilidad operacional / ingresos operacionales. Margen neto = utilidad del período / ingresos operacionales. Variación positiva = favorable.',
     inputs: ['ejec_ppto', 'ingresos', 'ppto_ingresos'],
     fn: (ejec_ppto, ingresos, ppto_ingresos) => {
       const base = new Map();
@@ -551,6 +551,8 @@
           out.push({ periodo, mes, unidad, concepto, orden, presupuesto: p, ejecucion: e, var: v, var_pct: p ? v / Math.abs(p) : null, cumplimiento: p ? e / p : null });
         });
         const mp = ip ? (ip - tot[1]) / ip : null, me = ie ? (ie + inop - tot[0]) / ie : null;
+        const mop = mp, meo = ie ? (ie - tot[0]) / ie : null;
+        out.push({ periodo, mes, unidad, concepto: 'Margen operacional', orden: 7.5, presupuesto: mop, ejecucion: meo, var: mop == null || meo == null ? null : meo - mop, var_pct: null, cumplimiento: null });
         out.push({ periodo, mes, unidad, concepto: 'Margen neto', orden: 10, presupuesto: mp, ejecucion: me, var: mp == null || me == null ? null : me - mp, var_pct: null, cumplimiento: null });
       }
       return out;
@@ -793,7 +795,8 @@
       const tr = document.createElement('tr');
       tr.dataset.key = [r.periodo, r.mes, r.unidad, r.concepto].map(enc).join(',');
       if (r.concepto.startsWith('Utilidad')) tr.className = 'hl';
-      [[r.concepto], [M(r.presupuesto)], [M(r.ejecucion)], [Ms(r.var), tone(r.var)], [P(r.var_pct, true), tone(r.var), 'hide-sm']].forEach(([t, c, h]) => {
+      const mg = r.concepto === 'Margen operacional';
+      (mg ? [[r.concepto], [P(r.presupuesto)], [P(r.ejecucion)], [isN(r.var) ? PTS(r.var) : '—', tone(r.var)], ['', '', 'hide-sm']] : [[r.concepto], [M(r.presupuesto)], [M(r.ejecucion)], [Ms(r.var), tone(r.var)], [P(r.var_pct, true), tone(r.var), 'hide-sm']]).forEach(([t, c, h]) => {
         const td = document.createElement('td'); td.textContent = t; td.className = [c, h].filter(Boolean).join(' '); tr.append(td);
       });
       return tr;
@@ -801,12 +804,12 @@
   }
 
   function pygKpis(box, rows, w) {
-    const defs = [['Ingresos', 'Ingresos'], ['Costos y gastos', 'Costos y gastos'], ['Utilidad del período', 'Utilidad'], ['Margen neto', 'Margen neto']];
+    const defs = [['Ingresos', 'Ingresos'], ['Costos y gastos', 'Costos y gastos'], ['Utilidad del período', 'Utilidad'], ['Margen operacional', 'Margen operacional'], ['Margen neto', 'Margen neto']];
     if (!box.children.length) defs.forEach(([c, lbl]) => {
       const card = document.createElement('div'); card.className = 'ig-card ig-kpi';
       const l = document.createElement('div'); l.className = 'ig-lbl'; l.textContent = lbl;
       const n = document.createElement('div'); n.className = 'ig-num dash-skeleton'; n.dataset.source = 'pyg'; n.dataset.field = 'ejecucion';
-      const d = document.createElement('div'); d.className = 'ig-delta'; d.dataset.source = 'pyg'; d.dataset.field = c === 'Margen neto' ? 'var' : 'var_pct';
+      const d = document.createElement('div'); d.className = 'ig-delta'; d.dataset.source = 'pyg'; d.dataset.field = c.startsWith('Margen') ? 'var' : 'var_pct';
       const rf = document.createElement('div'); rf.className = 'ig-ref'; rf.append('Ppto: ');
       const rs = document.createElement('span'); rs.dataset.source = 'pyg'; rs.dataset.field = 'presupuesto'; rf.append(rs);
       n.textContent = d.textContent = rs.textContent = '—';
@@ -817,7 +820,7 @@
       card.querySelectorAll('[data-source]').forEach((el) => el.setAttribute('data-where', w(c)));
       const n = card.querySelector('.ig-num'), d = card.querySelector('.ig-delta'), rs = card.querySelector('.ig-ref span');
       if (!r) { [n, d, rs].forEach((e) => { e.textContent = '—'; }); return; }
-      if (c === 'Margen neto') { setText(n, P(r.ejecucion)); setText(d, isN(r.var) ? PTS(r.var) + ' vs. ppto' : '', tone(r.var)); setText(rs, P(r.presupuesto)); }
+      if (c.startsWith('Margen')) { setText(n, P(r.ejecucion)); setText(d, isN(r.var) ? PTS(r.var) + ' vs. ppto' : '', tone(r.var)); setText(rs, P(r.presupuesto)); }
       else {
         setText(n, M(r.ejecucion));
         const txt = !isN(r.var_pct) ? '' : c === 'Costos y gastos' ? P(Math.abs(r.var_pct)) + (r.var >= 0 ? ' bajo ppto' : ' sobre ppto') : P(r.var_pct, true) + ' vs. ppto';
