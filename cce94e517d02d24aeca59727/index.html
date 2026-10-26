@@ -646,8 +646,12 @@
   const nf0 = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 });
   const nf1 = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 });
   const isN = (v) => v != null && !isNaN(v) && isFinite(v);
-  const M = (v) => !isN(v) ? '—' : (v < 0 && Math.abs(v) >= 5e4 ? '−' : '') + '$' + (Math.abs(v) >= 1e8 ? nf0 : nf1).format(Math.abs(v) / 1e6) + ' M';
-  const Ms = (v) => !isN(v) ? '—' : (v >= 5e4 ? '+' : '') + M(v);
+  const M = (v) => !isN(v) ? '—' : Math.abs(v) < 1e6 && Math.abs(v) >= 500 ? (v < 0 ? '−' : '') + '$' + nf1.format(Math.abs(v) / 1e3) + ' mil'
+    : (v < 0 && Math.abs(v) >= 5e4 ? '−' : '') + '$' + (Math.abs(v) >= 1e8 ? nf0 : nf1).format(Math.abs(v) / 1e6) + ' M';
+  const Ms = (v) => !isN(v) ? '—' : (v >= 500 ? '+' : '') + M(v);
+  // unidad de los ejes: miles si todo el gráfico es menor a 1 M
+  const unitOf = (mx) => mx < 1e6 ? [1e3, 'Miles'] : [1e6, 'Millones'];
+  const setUnit = (box, lbl) => { const sub = box.closest('.ig-card'); const p = sub && sub.querySelector('.ig-sub'); if (p && p.firstChild && p.firstChild.nodeType === 3) p.firstChild.textContent = p.firstChild.textContent.replace(/^(Millones|Miles)/, lbl); };
   const P = (v, sign) => !isN(v) ? '—' : (sign && v > 0 ? '+' : '') + (v < 0 ? '−' : '') + nf1.format(Math.abs(v) * 100) + '%';
   const PTS = (v) => !isN(v) ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + nf1.format(Math.abs(v) * 100) + ' pts';
   const enc = (s) => encodeURIComponent(String(s));
@@ -742,14 +746,17 @@
 
   function monthBars(box, rows, sel, onClick) {
     const H = 260; const [svg, W] = newSvg(box, H);
-    const maxV = d3.max(rows, (d) => Math.max(d.ejecutado, d.presupuesto)) || 1;
-    const y = d3.scaleLinear([0, maxV * 1.08], [H - 24, 10]).nice();
-    const fmtT = (v) => nf0.format(v / 1e6);
-    const ml = textW(svg, fmtT(y.domain()[1])) + 10;
+    const maxV = d3.max(rows, (d) => Math.max(d.ejecutado, d.presupuesto, 0)) || 1;
+    const minV = d3.min(rows, (d) => Math.min(d.ejecutado, d.presupuesto, 0)) || 0;
+    const [uDiv, uLbl] = unitOf(Math.max(maxV, -minV)); setUnit(box, uLbl);
+    const y = d3.scaleLinear([minV * 1.08, maxV * 1.08], [H - 24, 10]).nice();
+    const nfu = uDiv === 1e3 ? nf0 : (Math.max(maxV, -minV) < 1e7 ? nf1 : nf0);
+    const fmtT = (v) => nfu.format(v / uDiv);
+    const ml = d3.max(y.ticks(4), (t) => textW(svg, fmtT(t))) + 10;
     const x = d3.scaleBand(rows.map((d) => d.mes), [ml, W - 4]).padding(0.22);
     const xi = d3.scaleBand(['p', 'e'], [0, x.bandwidth()]).padding(0.08);
     const bw = Math.min(28, xi.bandwidth()), off = (k) => xi(k) + (xi.bandwidth() - bw) / 2;
-    svg.append('g').selectAll('line').data(y.ticks(4)).join('line').attr('x1', ml).attr('x2', W - 4).attr('y1', y).attr('y2', y).attr('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').selectAll('line').data(y.ticks(4)).join('line').attr('x1', ml).attr('x2', W - 4).attr('y1', y).attr('y2', y).attr('stroke', (t) => t === 0 ? 'var(--cds-chart-axis)' : 'var(--cds-chart-grid)');
     svg.append('g').selectAll('text').data(y.ticks(4)).join('text').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(fmtT);
     svg.append('g').selectAll('text').data(rows).join('text').attr('x', (d) => x(d.mes) + x.bandwidth() / 2).attr('y', H - 6).attr('text-anchor', 'middle').attr('font-size', 11)
       .attr('fill', (d) => d.mes === sel ? 'var(--color-fg)' : 'var(--color-fg-muted)').attr('font-weight', (d) => d.mes === sel ? 600 : null).text((d) => MESES[d.mes - 1].slice(0, 3));
@@ -758,8 +765,8 @@
       .on('mousemove', (ev, d) => showTip(box, ev, MESES[d.mes - 1] + ' 2026', ['Presupuesto: ' + M(d.presupuesto), 'Ejecución: ' + M(d.ejecutado), 'Var.: ' + Ms(d.var) + ' (' + P(d.var_pct, true) + ')']))
       .on('mouseleave', () => hideTip(box));
     g.append('rect').attr('width', x.bandwidth()).attr('height', H - 24).attr('fill', 'transparent');
-    g.append('rect').attr('x', off('p')).attr('width', bw).attr('y', (d) => y(Math.max(0, d.presupuesto))).attr('height', (d) => Math.max(0, y(0) - y(Math.max(0, d.presupuesto)))).attr('rx', 3).attr('fill', 'var(--ig-grey)');
-    g.append('rect').attr('x', off('e')).attr('width', bw).attr('y', (d) => y(Math.max(0, d.ejecutado))).attr('height', (d) => Math.max(0, y(0) - y(Math.max(0, d.ejecutado)))).attr('rx', 3)
+    g.append('rect').attr('x', off('p')).attr('width', bw).attr('y', (d) => Math.min(y(0), y(d.presupuesto))).attr('height', (d) => Math.abs(y(0) - y(d.presupuesto))).attr('rx', 3).attr('fill', 'var(--ig-grey)');
+    g.append('rect').attr('x', off('e')).attr('width', bw).attr('y', (d) => Math.min(y(0), y(d.ejecutado))).attr('height', (d) => Math.abs(y(0) - y(d.ejecutado))).attr('rx', 3)
       .attr('fill', (d) => d.ejecutado > d.presupuesto * 1.1 ? 'var(--ig-bad)' : 'var(--ig-mid)');
   }
 
@@ -768,7 +775,8 @@
     const hasP = rows.some((d) => isN(d.presupuesto));
     const vals = rows.flatMap((d) => [d.presupuesto, d.ejecucion]).filter(isN);
     const y = d3.scaleLinear([Math.min(0, d3.min(vals)), d3.max(vals) * 1.12 || 1], [H - 24, 14]).nice();
-    const fmtT = (v) => nf0.format(v / 1e6);
+    const [uDiv, uLbl] = unitOf(d3.max(vals, Math.abs) || 0); setUnit(box, uLbl);
+    const fmtT = (v) => nf0.format(v / uDiv);
     const ml = d3.max(y.ticks(4), (t) => textW(svg, fmtT(t))) + 10;
     const x = d3.scalePoint(rows.map((d) => d.mes), [ml + 12, W - 20]);
     svg.append('g').selectAll('line').data(y.ticks(4)).join('line').attr('x1', ml).attr('x2', W - 4).attr('y1', y).attr('y2', y).attr('stroke', (t) => t === 0 ? 'var(--cds-chart-axis)' : 'var(--cds-chart-grid)');
