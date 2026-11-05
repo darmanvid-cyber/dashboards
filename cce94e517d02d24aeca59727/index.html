@@ -8,8 +8,11 @@
 --color-fg:#1b1b1b;--color-fg-muted:#5f6368;--color-bg:#f6f7f5;--color-panel:#ffffff;--color-border-line:#e0e0e0;--color-ok:#196B24;--color-warn:#9a6b00;--color-bad:#B03F0C;
 --cds-chart-grid:#ececec;--cds-chart-axis:#9e9e9e;--cds-chart-muted:#bdbdbd;--cds-chart-status-critical:#C0501A;--cds-chart-reference:#7f7f7f;
 --cds-surface-popover:#ffffff;--cds-border:#d6d6d6;--cds-shadow-popover:0 4px 16px rgba(0,0,0,.12);--cds-text-secondary:#5f6368;color-scheme:light dark}
-@media (prefers-color-scheme:dark){:root{--color-fg:#ececec;--color-fg-muted:#a8adb3;--color-bg:#141614;--color-panel:#1e211e;--color-border-line:#333833;--color-ok:#7cc96a;--color-warn:#e0b84a;--color-bad:#f08a5d;
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--color-fg:#ececec;--color-fg-muted:#a8adb3;--color-bg:#141614;--color-panel:#1e211e;--color-border-line:#333833;--color-ok:#7cc96a;--color-warn:#e0b84a;--color-bad:#f08a5d;
 --cds-chart-grid:#2a2e2a;--cds-chart-axis:#666;--cds-chart-muted:#555;--cds-surface-popover:#262a26;--cds-border:#3a3f3a;--cds-shadow-popover:0 4px 16px rgba(0,0,0,.5);--cds-text-secondary:#a8adb3}}
+:root[data-theme="dark"]{--color-fg:#ececec;--color-fg-muted:#a8adb3;--color-bg:#141614;--color-panel:#1e211e;--color-border-line:#333833;--color-ok:#7cc96a;--color-warn:#e0b84a;--color-bad:#f08a5d;
+--cds-chart-grid:#2a2e2a;--cds-chart-axis:#666;--cds-chart-muted:#555;--cds-surface-popover:#262a26;--cds-border:#3a3f3a;--cds-shadow-popover:0 4px 16px rgba(0,0,0,.5);--cds-text-secondary:#a8adb3;color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light}
 *{box-sizing:border-box}html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:var(--font-anthropic-sans);font-size:15px;line-height:1.45}
 #dash-root{max-width:1400px;margin:0 auto;padding:16px clamp(12px,3vw,32px) 40px}
 #dash-root b,#dash-root strong{font-weight:700}
@@ -176,6 +179,8 @@
 #dash-root .ig-cmp-opts label { display: flex; flex-direction: column; gap: 2px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
 #dash-root #acu-unidades-card, #dash-root #mes-unidades-card, #dash-root #mes-areas-card { overflow-x: auto; }
 #dash-root .ig-share { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin-left: auto; padding: 8px 14px; font: inherit; font-size: 0.875rem; color: #fff; background: transparent; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; cursor: pointer; }
+#dash-root .ig-theme { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin-left: auto; padding: 8px 14px; font: inherit; font-size: 0.875rem; color: #fff; background: transparent; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; cursor: pointer; }
+#dash-root .ig-theme:hover, #dash-root .ig-theme:focus-visible { background: rgba(255,255,255,.15); border-color: #fff; }
 #dash-root .ig-share:hover, #dash-root .ig-share:focus-visible { background: rgba(255,255,255,.15); border-color: #fff; }
 </style>
 
@@ -191,9 +196,9 @@
         (<b><span id="tk-cv" data-source="costos" data-field="var">—</span></b>).
       </p>
     </div>
-    <button type="button" class="ig-share" id="btn-compartir" aria-label="Compartir dashboard">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
-      <span id="btn-compartir-txt">Compartir</span>
+    <button type="button" class="ig-theme" id="btn-tema" aria-label="Cambiar tema claro u oscuro">
+      <svg id="btn-tema-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+      <span id="btn-tema-txt">Tema</span>
     </button>
   </header>
 
@@ -1322,45 +1327,21 @@
 
 <script>
 (function () {
-  /* Enlace de SharePoint de este archivo. Pegarlo aquí entre comillas para que el botón Compartir lo copie siempre. */
-  var SHARE_URL = '';
-  var btn = document.getElementById('btn-compartir');
-  var txt = document.getElementById('btn-compartir-txt');
+  var root = document.documentElement, btn = document.getElementById('btn-tema');
   if (!btn) return;
-  function flash(msg) {
-    txt.textContent = msg;
-    setTimeout(function () { txt.textContent = 'Compartir'; }, 2000);
-  }
-  function copiar(url) {
-    if (navigator.clipboard && window.isSecureContext) {
-      return navigator.clipboard.writeText(url);
-    }
-    return new Promise(function (ok, fail) {
-      var t = document.createElement('textarea');
-      t.value = url; t.style.position = 'fixed'; t.style.opacity = '0';
-      document.body.appendChild(t); t.select();
-      try { document.execCommand('copy') ? ok() : fail(); } catch (e) { fail(e); }
-      document.body.removeChild(t);
-    });
-  }
+  var ico = document.getElementById('btn-tema-ico'), txt = document.getElementById('btn-tema-txt');
+  var SOL = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  var LUNA = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+  function actual() { var t = root.getAttribute('data-theme'); return t || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+  function pintar() { var oscuro = actual() === 'dark'; ico.innerHTML = oscuro ? SOL : LUNA; txt.textContent = oscuro ? 'Modo claro' : 'Modo oscuro'; }
+  try { var g = localStorage.getItem('dashTheme'); if (g === 'dark' || g === 'light') root.setAttribute('data-theme', g); } catch (e) {}
+  pintar();
   btn.addEventListener('click', function () {
-    var url = location.href.split('#')[0];
-    if (!/^https?:/.test(url)) {
-      url = SHARE_URL;
-      if (!url) { try { url = localStorage.getItem('shareUrl') || ''; } catch (e) {} }
-      if (!url) { url = (prompt('Pegue el enlace de SharePoint de este archivo (se recordará en este equipo):') || '').trim(); if (!url) return; try { localStorage.setItem('shareUrl', url); } catch (e) {} }
-    }
-    var data = { title: document.title || 'Presupuesto vs. ejecución 2026', text: 'Presupuesto vs. ejecución 2026', url: url };
-    var web = /^https?:/.test(location.href) && window.top === window;
-    var movil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (navigator.share && web && movil) {
-      navigator.share(data).catch(function (e) {
-        if (e && e.name === 'AbortError') return;
-        copiar(url).then(function () { flash('Enlace copiado'); }, function () { flash('No se pudo copiar'); });
-      });
-    } else {
-      copiar(url).then(function () { flash('Enlace copiado'); }, function () { flash('No se pudo copiar'); });
-    }
+    var t = actual() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', t);
+    try { localStorage.setItem('dashTheme', t); } catch (e) {}
+    pintar();
+    window.dispatchEvent(new Event('resize'));
   });
 })();
 </script>
