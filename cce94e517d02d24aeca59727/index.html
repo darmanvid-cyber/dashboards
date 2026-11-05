@@ -1062,7 +1062,7 @@
       add('Total · ' + L.length + (L.length === 1 ? ' línea' : ' líneas'), '', '$' + nf0.format(tot), 'hl');
       tb.append(body); wrap.append(tb); td.append(wrap); tr.append(td); return tr;
     };
-    const exportCuentas = (rows, periodo, conDetalle) => {
+    const exportCuentas = (rows, periodo) => {
       const num = (v) => (isN(v) ? v : null);
       const filt = `Grupo: ${grp} · ${periodo === 'acum' ? 'Acumulado enero – mes ' + mes : 'Mes ' + mes} · Responsable: ${resp} · Clase: ${clase} · Unidad: ${uni} · Valores en pesos`;
       const H = (...t) => t.map((x) => ({ v: x, s: 1 }));
@@ -1071,10 +1071,14 @@
         ...rows.map((r) => [r.cuenta, { v: num(r.presupuesto), s: 2 }, { v: num(r.ejecutado), s: 2 }, { v: num(r.var), s: 2 }, { v: num(r.var_pct), s: 3 }]),
         [{ v: 'Total', s: 1 }, { v: tot.p, s: 4 }, { v: tot.e, s: 4 }, { v: tot.v, s: 4 }, { v: tot.p ? tot.v / tot.p : null, s: 5 }]];
       const sheets = [{ name: 'Cuentas', rows: cuentas, widths: [48, 18, 18, 18, 14] }];
-      if (conDetalle) {
-        const det = [H('Cuenta', 'Descripción (Column1)', 'Tercero', 'Valor')];
-        rows.forEach((r) => detalleCuenta(r.cuenta).forEach((x) => det.push([r.cuenta, x.desc || '(sin descripción)', x.tercero || '(sin tercero)', { v: x.valor, s: 2 }])));
-        sheets.push({ name: 'Detalle', rows: det, widths: [40, 55, 40, 18] });
+      {
+        const ctas = new Set(rows.map((r) => r.cuenta));
+        const L = detRows.filter((d) => ctas.has(d.Cuenta) && d.Grupo === grp && (periodo === 'acum' ? Number(d.mes) <= mes : Number(d.mes) === mes) && (resp === 'Todos' || d.Responsable === resp) && (clase === 'Todas' || d.Clase === clase) && (uni === 'Todas' || d.Unidad === uni))
+          .sort((x, y) => String(x.Cuenta).localeCompare(String(y.Cuenta)) || Number(x.mes) - Number(y.mes) || Math.abs(y.valor) - Math.abs(x.valor));
+        const det = [H('Mes', 'Cuenta', 'Descripción (Column1)', 'Tercero', 'Valor'),
+          ...L.map((d) => [Number(d.mes), d.Cuenta, d.Column1 || '(sin descripción)', d.Tercero || '(sin tercero)', { v: Number(d.valor), s: 2 }])];
+        det.push([{ v: 'Total', s: 1 }, '', '', '', { v: L.reduce((t, d) => t + Number(d.valor), 0), s: 4 }]);
+        sheets.push({ name: 'Detalle', rows: det, widths: [6, 40, 55, 40, 18] });
       }
       const safe = String(grp).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
       descargar(xlsxBlob(sheets), `Cuentas_${safe}_${periodo === 'acum' ? 'acumulado' : 'mes'}_${mes}.xlsx`);
@@ -1084,7 +1088,7 @@
       if (grp === 'Todos') return;
       const rows = kRows.filter((r) => r.periodo === periodo && r.mes === mes && r.responsable === resp && r.clase === clase && r.unidad === uni && r.grupo === grp && (r.ejecutado || r.presupuesto));
       const keys = ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'];
-      const xb = $('#' + tbl.id.replace('-cuentas', '-cta-xls')); if (xb) xb.onclick = () => exportCuentas(rows, periodo, tbl.id === 'mes-cuentas');
+      const xb = $('#' + tbl.id.replace('-cuentas', '-cta-xls')); if (xb) xb.onclick = () => exportCuentas(rows, periodo);
       if (tbl.id !== 'mes-cuentas') { table(tbl, rows, keys, [['cuenta', (v) => v], ...costCols], sorts[tbl.id]); return; }
       const ok = (r) => openCta.has(mes + '|' + grp + '|' + r.cuenta);
       const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
