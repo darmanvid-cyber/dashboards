@@ -189,6 +189,8 @@ ol{margin:8px 0 0;padding-left:20px}
   <div class="card"><h2>Rutas con mayor dispersión de tarifa</h2><p class="note">Rutas con ≥4 viajes. “Sobre mediana” = lo que costaron los viajes que superan la mediana de su ruta.</p><div class="scroll" style="max-height:340px"><table id="tRut"></table></div></div>
 </div>
 
+<div class="card" style="margin-bottom:12px"><h2>Viajes por cliente y ruta</h2><p class="note">Número de viajes (manifiestos), fletes y flete promedio de cada ruta por cliente; respeta los filtros activos. Ordenado por cliente y por número de viajes.</p><div class="scroll" style="max-height:420px"><table id="tCR"></table></div></div>
+
 <div class="grid g2">
   <div class="card"><h2>Cajas por semana de entrega</h2><p class="note">Piezas de la hoja <i>cajas</i> (sin fecha de entrega = pendientes).</p><div class="chart"><canvas id="cCajSem"></canvas></div></div>
   <div class="card"><h2>Cajas por estado del pedido</h2><div class="chart"><canvas id="cCajEst"></canvas></div></div>
@@ -516,7 +518,7 @@ function render(){
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:6px 0">
     <div style="flex:0 1 300px">${gauge(T.ing>0?(T.ing-T.ejec)/T.ing:null,1-raw.pctPpto)}</div>
-    <div class="sub" style="flex:1 1 240px"><b>Rentabilidad = (Ingreso esperado − Ejecución) ÷ Ingreso esperado.</b> Margen que deja el ingreso después de los fletes${raw._cli?" de "+raw._cli:""}. La marca es el margen que implica el presupuesto (1 − ${P(raw.pctPpto)} = ${P(1-raw.pctPpto)}): por encima de la marca la ejecución va mejor que lo presupuestado.${T.ing>0?" Ingreso "+M(T.ing)+" − ejecución "+M(T.ejec)+" = <b>"+M(T.ing-T.ejec)+"</b>.":" Este cliente no tiene ingreso en la hoja supuestos."}</div>
+    <div class="sub" style="flex:1 1 240px"><b>Viajes = manifiestos del cliente en el corte. Rentabilidad = (Ingreso esperado − Ejecución) ÷ Ingreso esperado.</b> Margen que deja el ingreso después de los fletes${raw._cli?" de "+raw._cli:""}. La marca es el margen que implica el presupuesto (1 − ${P(raw.pctPpto)} = ${P(1-raw.pctPpto)}): por encima de la marca la ejecución va mejor que lo presupuestado.${T.ing>0?" Ingreso "+M(T.ing)+" − ejecución "+M(T.ejec)+" = <b>"+M(T.ing-T.ejec)+"</b>.":" Este cliente no tiene ingreso en la hoja supuestos."}</div>
   </div>
   <div class="scroll"><table id="tAna"></table></div>
   <div class="bar"><i style="width:${Math.min(100,pct*100)}%"></i></div>
@@ -528,9 +530,9 @@ function render(){
    const cel=x=>x.rent==null?"—":`<span class="rb"><i style="width:${Math.max(0,Math.min(100,x.rent*100))}%;background:${x.rent>=meta?"var(--good)":"var(--bad)"}"></i></span><b style="color:${x.rent>=meta?"var(--good)":"var(--bad)"}">${P(x.rent)}</b>`;
    const tg={c:"Total (todos los clientes)",ing:TG.ing,ej:TG.ejec,rent:TG.ing>0?(TG.ing-TG.ejec)/TG.ing:null};
    $("rentNote").innerHTML="Rentabilidad = (Ingreso esperado − Ejecución) ÷ Ingreso esperado de cada cliente, sobre el corte completo (no depende del filtro de fechas). Verde = alcanza o supera la meta de <b>"+P(meta)+"</b> (1 − "+P(PCT_CLI)+" del presupuesto); rojo = por debajo. Sin ingreso en las hojas SUPUESTOS/REMESAS el % no se puede calcular (—). Haz clic en un cliente para filtrar el dash por él.";
-   $("tRent").innerHTML="<thead><tr>"+["Cliente","Manifiestos","Ingreso esperado","Ejecución (fletes)","Rentabilidad $","% Rentabilidad"].map(h=>`<th>${h}</th>`).join("")+"</tr></thead><tbody>"+
-     rr.map(x=>`<tr data-c="${escH(x.c)}" class="${CLISEL.has(x.c)?"sel":""}" style="cursor:pointer"><td>${escH(x.c)}</td><td>${x.n}</td><td>${x.ing>0?M(x.ing):"—"}</td><td>${M(x.ej)}</td><td>${x.rent==null?"—":M(x.ing-x.ej)}</td><td style="white-space:nowrap">${cel(x)}</td></tr>`).join("")+
-     `<tr style="font-weight:700"><td>${tg.c}</td><td>${RAW.manifs.length}</td><td>${M(tg.ing)}</td><td>${M(tg.ej)}</td><td>${tg.rent==null?"—":M(tg.ing-tg.ej)}</td><td style="white-space:nowrap">${cel(tg)}</td></tr></tbody>`;}
+   $("tRent").innerHTML="<thead><tr>"+["Cliente","Viajes","Flete prom. por viaje","Ingreso esperado","Ejecución (fletes)","Rentabilidad $","% Rentabilidad"].map(h=>`<th>${h}</th>`).join("")+"</tr></thead><tbody>"+
+     rr.map(x=>`<tr data-c="${escH(x.c)}" class="${CLISEL.has(x.c)?"sel":""}" style="cursor:pointer"><td>${escH(x.c)}</td><td><b>${x.n}</b></td><td>${x.n?M(x.ej/x.n):"—"}</td><td>${x.ing>0?M(x.ing):"—"}</td><td>${M(x.ej)}</td><td>${x.rent==null?"—":M(x.ing-x.ej)}</td><td style="white-space:nowrap">${cel(x)}</td></tr>`).join("")+
+     `<tr style="font-weight:700"><td>${tg.c}</td><td>${RAW.manifs.length}</td><td>${RAW.manifs.length?M(tg.ej/RAW.manifs.length):"—"}</td><td>${M(tg.ing)}</td><td>${M(tg.ej)}</td><td>${tg.rent==null?"—":M(tg.ing-tg.ej)}</td><td style="white-space:nowrap">${cel(tg)}</td></tr></tbody>`;}
 
   /* por día */
   const dia=agg(rows,r=>r[0]).sort((a,b)=>a.k<b.k?-1:1);
@@ -570,6 +572,12 @@ function render(){
     return {k:x.k,n:x.n,min:a[0],max:a[a.length-1],med,ratio:a[a.length-1]/a[0],sobre:a.reduce((s,v)=>s+Math.max(0,v-med),0)}}).sort((a,b)=>b.sobre-a.sobre);
   tbl("tRut",["Ruta","Viajes","Mín.","Mediana","Máx.","Máx/Mín","Sobre mediana"],rr.slice(0,15).map(x=>
     [x.k,x.n,"$"+nf.format(x.min),"$"+nf.format(x.med),"$"+nf.format(x.max),x.ratio>=1.5?`<span class="tag bad">${x.ratio.toFixed(2)}×</span>`:x.ratio.toFixed(2)+"×",M(x.sobre)]));
+
+  /* viajes por cliente y ruta */
+  {const cr=agg(rows,r=>(r[11]||"N/D")+"\u0001"+r[2].replace(" ATLANTICO","")+" → "+r[3]),tot={};
+   cr.forEach(o=>{const c=o.k.split("\u0001")[0];tot[c]=(tot[c]||0)+o.n});
+   cr.sort((x,y)=>tot[y.k.split("\u0001")[0]]-tot[x.k.split("\u0001")[0]]||x.k.split("\u0001")[0].localeCompare(y.k.split("\u0001")[0])||y.n-x.n);
+   tbl("tCR",["Cliente","Ruta","Viajes","Fletes","Flete prom. por viaje"],cr.map(o=>{const [c,ru]=o.k.split("\u0001");return [escH(c),ru,"<b>"+o.n+"</b>",M(o.v),M(o.v/o.n)]}));}
 
   /* cajas */
   const cw=agg(raw.cajas,r=>r[1]?weekStart(r[1]):"Sin entrega",r=>r[4]).sort((a,b)=>a.k<b.k?-1:1);
