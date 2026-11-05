@@ -233,7 +233,7 @@ ol{margin:8px 0 0;padding-left:20px}
     <div class="card"><h2>Ahorro potencial por ruta</h2><div class="scroll"><table id="vAhoRut"></table></div></div>
     <div class="card"><h2>Ocupación de vehículos</h2><p class="note">% de ocupación = peso usado ÷ capacidad del vehículo. Cada viaje es un manifiesto con todos sus pedidos; el peso usado es el mayor entre el peso real y el declarado en el manifiesto. Use «Ver detalle» para abrir los viajes de cada regional.</p><div class="chart" style="height:150px"><canvas id="vOcu"></canvas></div><div class="scroll" style="max-height:170px"><table id="vOcuT"></table></div></div>
   </div>
-  <div class="card" style="margin-bottom:12px"><h2>Viajes por cliente y ruta</h2><p class="note">Número de viajes (manifiestos), fletes y flete promedio de cada ruta por cliente; solo combinaciones con 3 o más viajes; se excluyen las rutas urbanas (origen y destino en la misma ciudad, p. ej. Barranquilla → Barranquilla) y Funza ↔ Bogotá; respeta los filtros activos. Ordenado por cliente y por número de viajes.</p><div class="scroll" style="max-height:420px"><table id="tCR"></table></div></div>
+  <div class="card" style="margin-bottom:12px"><h2>Viajes por cliente y ruta · Fresenius Medical Care</h2><p class="note">Número de viajes (manifiestos), fletes y flete promedio de cada ruta de Fresenius Medical Care; solo combinaciones con 3 o más viajes; se excluyen las rutas urbanas (origen y destino en la misma ciudad, p. ej. Barranquilla → Barranquilla) Funza ↔ Bogotá Girardota ↔ Medellín y Yumbo ↔ Cali; respeta los filtros activos. Ordenado por cliente y por número de viajes.</p><div class="scroll" style="max-height:420px"><table id="tCR"></table></div></div>
   </div>
 </div>
 <div class="sub" style="margin:8px 0 24px">Fuente: FLETES SEMANAL.xlsx y Analisis Manifiestos semanal.xlsx · COP · Ppto = 64 % del ingreso esperado (cajas × valor promedio por caja); ejecución incluye fletes contables.</div>
@@ -573,8 +573,8 @@ function render(){
     [x.k,x.n,"$"+nf.format(x.min),"$"+nf.format(x.med),"$"+nf.format(x.max),x.ratio>=1.5?`<span class="tag bad">${x.ratio.toFixed(2)}×</span>`:x.ratio.toFixed(2)+"×",M(x.sobre)]));
 
   /* viajes por cliente y ruta */
-  {const urb_=r=>{const o=r[2].replace(" ATLANTICO","").trim().toUpperCase(),d=String(r[3]).trim().toUpperCase();return o===d||o.endsWith(" "+d)||d.endsWith(" "+o)||(o==="FUNZA"&&d.startsWith("BOGOTA"))||(d==="FUNZA"&&o.startsWith("BOGOTA"))},
-   cr=agg(rows.filter(r=>!urb_(r)),r=>(r[11]||"N/D")+"\u0001"+r[2].replace(" ATLANTICO","")+" → "+r[3]).filter(o=>o.n>=3),tot={};
+  {const urb_=r=>{const o=r[2].replace(" ATLANTICO","").trim().toUpperCase(),d=String(r[3]).trim().toUpperCase();return o===d||o.endsWith(" "+d)||d.endsWith(" "+o)||(o==="FUNZA"&&d.startsWith("BOGOTA"))||(d==="FUNZA"&&o.startsWith("BOGOTA"))||(o==="GIRARDOTA"&&d.startsWith("MEDELLIN"))||(d==="GIRARDOTA"&&o.startsWith("MEDELLIN"))||(o==="YUMBO"&&d==="CALI")||(d==="YUMBO"&&o==="CALI")},
+   cr=agg(rows.filter(r=>esFMC(r[11]||"")&&!urb_(r)),r=>(r[11]||"N/D")+"\u0001"+r[2].replace(" ATLANTICO","")+" → "+r[3]).filter(o=>o.n>=3),tot={};
    cr.forEach(o=>{const c=o.k.split("\u0001")[0];tot[c]=(tot[c]||0)+o.n});
    cr.sort((x,y)=>tot[y.k.split("\u0001")[0]]-tot[x.k.split("\u0001")[0]]||x.k.split("\u0001")[0].localeCompare(y.k.split("\u0001")[0])||y.n-x.n);
    tbl("tCR",["Cliente","Ruta","Viajes","Fletes","Flete prom. por viaje"],cr.map(o=>{const [c,ru]=o.k.split("\u0001");return [escH(c),ru,"<b>"+o.n+"</b>",M(o.v),M(o.v/o.n)]}));}
