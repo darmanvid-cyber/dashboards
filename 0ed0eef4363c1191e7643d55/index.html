@@ -75,6 +75,9 @@ button:hover,.btn:hover{border-color:var(--ink2)}
 .msa{display:flex;gap:6px;margin-bottom:6px}.msa button{font-size:12px;padding:3px 8px}
 .msl{max-height:260px;overflow:auto}.msl label{display:flex;gap:8px;align-items:center;padding:4px 4px;border-radius:6px;font-size:13px;color:var(--ink);cursor:pointer}
 .msl label:hover{background:var(--grid)}.msl label[hidden]{display:none}
+.filters label.ajl{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink);cursor:pointer;border:1px solid var(--axis);border-radius:8px;padding:4px 10px}
+.rb{display:inline-block;vertical-align:middle;width:90px;height:8px;background:var(--grid);border-radius:4px;overflow:hidden;margin-right:8px}.rb>i{display:block;height:100%}
+#tRent tr.sel td{background:color-mix(in srgb,var(--s1) 12%,transparent)}
 .bar{height:10px;background:var(--grid);border-radius:5px;overflow:hidden;margin:8px 0 4px}
 .bar>i{display:block;height:100%;background:var(--s1)}
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -145,6 +148,7 @@ ol{margin:8px 0 0;padding-left:20px}
   <label>Desde <input type="date" id="d1"></label>
   <label>Hasta <input type="date" id="d2"></label>
   <span class="sub" style="font-size:12px">Cliente</span><div class="ms" id="cli"><button type="button" id="cliBtn" aria-haspopup="true" aria-expanded="false">Todos los clientes</button><div class="msp" id="cliP" hidden><input type="search" id="cliQ" placeholder="Buscar cliente…" aria-label="Buscar cliente"><div class="msa"><button type="button" id="cliAll">Seleccionar todos</button><button type="button" id="cliNone">Limpiar (todos)</button></div><div class="msl" id="cliL"></div></div></div>
+  <label class="ajl" title="Si se desmarca, la ejecución usa solo los fletes de los manifiestos, sin el ajuste de fletes contables"><input type="checkbox" id="ajT" checked> <span id="ajTx">Aplicar fletes contables</span></label>
   <button id="reset">Todo el corte</button>
   <span class="sub">El filtro de fechas aplica a manifiestos, fletes y validación de tarifas; el de cliente aplica a manifiestos y ejecución (presupuesto y cajas usan el corte completo, no hay presupuesto por cliente).</span>
 </div>
@@ -153,6 +157,12 @@ ol{margin:8px 0 0;padding-left:20px}
 <div class="card" id="analisis" style="margin-bottom:12px">
   <h2 style="font-size:16px">Hoja ANALISIS · premisas y resultado <span id="corteTag" class="sub"></span></h2>
   <div id="anaBody"></div>
+</div>
+
+<div class="card" id="rentCli" style="margin-bottom:12px">
+  <h2 style="font-size:16px">Rentabilidad por cliente</h2>
+  <p class="note" id="rentNote"></p>
+  <div class="scroll" style="max-height:420px"><table id="tRent"></table></div>
 </div>
 
 <div class="grid kpis" id="kpis"></div>
@@ -360,9 +370,9 @@ function parseVal(wb){
 const DEP=d=>{d=String(d||"").toUpperCase().trim();return d==="VALLE DEL CAUCA"?"VALLE":d};
 function agg(rows,keyf,valf=r=>r[7]){const m=new Map();for(const r of rows){const k=keyf(r);const o=m.get(k)||{k,n:0,v:0};o.n++;o.v+=valf(r);m.set(k,o)}return [...m.values()]}
 function weekStart(d){const t=new Date(d+"T00:00:00Z");const w=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-w);return t.toISOString().slice(0,10)}
-function totals(raw){
+function totals(raw,forceAj){
   const f=raw.manifs.reduce((a,r)=>a+r[7],0), c=raw.cajas.reduce((a,r)=>a+r[4],0);
-  const ing=typeof raw.ingreso==="number"?raw.ingreso:c*raw.valorCaja, ppto=typeof raw.ppto==="number"?raw.ppto:ing*raw.pctPpto, ejec=f*(1+raw.ajuste);
+  const ing=typeof raw.ingreso==="number"?raw.ingreso:c*raw.valorCaja, ppto=typeof raw.ppto==="number"?raw.ppto:ing*raw.pctPpto, ejec=f*(1+((forceAj||AJ_ON)?raw.ajuste:0));
   const ent=raw.cajas.filter(r=>r[2]==="ENTREGADO").reduce((a,r)=>a+r[4],0);
   const dates=raw.manifs.map(r=>r[0]).sort();
   return {f,c,ing,ppto,ejec,ent,n:raw.manifs.length,min:dates[0],max:dates[dates.length-1]};
@@ -424,7 +434,7 @@ function clienteView(raw,clis,TG){
     _cli:clis.length<=2?clis.join(" + "):clis.length+" clientes seleccionados",_clis:clis,
     _fuente:clis.length===1?rs[0].f:"suma de los ingresos de los "+clis.length+" clientes seleccionados"});
 }
-function snapshot(raw){const t=totals(raw);return {key:t.max,corte:raw.corte||t.max,n:t.n,fletes:t.f,ejec:t.ejec,ppto:t.ppto,cajas:t.c,entregadas:t.ent,oport:raw.val?oport(raw.val).total:null}}
+function snapshot(raw){const t=totals(raw,true);return {key:t.max,corte:raw.corte||t.max,n:t.n,fletes:t.f,ejec:t.ejec,ppto:t.ppto,cajas:t.c,entregadas:t.ent,oport:raw.val?oport(raw.val).total:null}}
 
 function oport(v,d1="",d2="9"){
   const inR=r=>r[1]>=d1&&r[1]<=d2;
@@ -461,6 +471,7 @@ function render(){
   CLISEL=new Set([...CLISEL].filter(c=>cls.includes(c)));
   $("cliL").innerHTML=cls.map(c=>`<label><input type="checkbox" value="${escH(c)}"${CLISEL.has(c)?" checked":""}> <span>${escH(c)}</span></label>`).join("");
   {const q=$("cliQ").value.trim().toUpperCase();if(q) $("cliL").querySelectorAll("label").forEach(l=>l.hidden=!l.textContent.toUpperCase().includes(q))}
+  $("ajTx").textContent="Aplicar fletes contables ("+P(RAW.ajuste)+")";$("ajT").checked=AJ_ON;
   $("cliBtn").textContent=(CLISEL.size===0?"Todos los clientes":CLISEL.size===1?[...CLISEL][0]:CLISEL.size+" clientes seleccionados")+" ▾";
   const CLIS=[...CLISEL].sort(), CLI=CLIS.length?(CLIS.length<=2?CLIS.join(" + "):CLIS.length+" clientes"):"";
   const TG=totals(RAW), raw=CLIS.length?clienteView(RAW,CLIS,TG):RAW, T=totals(raw);
@@ -480,21 +491,21 @@ function render(){
   ];
   $("kpis").innerHTML=kp.map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="d">${k[2]}</div></div>`).join("");
 
-  const adj=T.f*raw.ajuste, varr=T.ppto-T.ejec;
+  const adj=T.f*(AJ_ON?raw.ajuste:0), varr=T.ppto-T.ejec;
   $("corteTag").textContent="· "+(raw.corte||"");
   const bx=(l,v,k)=>`<div class="b${k?" k":""}"><div class="l">${l}</div><div class="v">${v}</div></div>`, op=o=>`<div class="op">${o}</div>`;
   $("anaBody").innerHTML=`
   <ul class="prem">
     <li><b>Premisa 1 · Ingreso esperado:</b> no es facturación real; se estima como <b>cajas × valor promedio por caja</b> ($${nf.format(raw.valorCaja)}, calculado por el área y registrado en la hoja <i>supuestos</i>).</li>
     <li><b>Premisa 2 · Presupuesto de fletes:</b> es el <b>${P(raw.pctPpto)} del ingreso esperado</b>.</li>
-    <li><b>Premisa 3 · Ejecución:</b> fletes de los manifiestos del corte <b>+ ${P(raw.ajuste)}</b> por fletes contables (relación entre lo causado en contabilidad y los manifiestos).</li>
+    <li><b>Premisa 3 · Ejecución:</b> fletes de los manifiestos del corte ${AJ_ON?`<b>+ ${P(raw.ajuste)}</b> por fletes contables (relación entre lo causado en contabilidad y los manifiestos)`:`<b>sin</b> el ajuste de fletes contables (${P(raw.ajuste)}) — desactivado con el selector «Aplicar fletes contables»`}.</li>
     <li><b>Variación (fav +)</b> = Presupuesto − Ejecución. Positiva = se ha gastado menos de lo presupuestado.</li>
   </ul>
   <div class="flow">
     ${raw._cli?bx("Cliente",raw._cli)+op("→")+bx("Ingreso esperado ("+raw._fuente+")",M(T.ing),1):bx("Cajas (piezas)",nf.format(T.c))+op("×")+bx("Valor promedio por caja","$"+nf.format(raw.valorCaja))+op("=")+bx("Ingreso esperado",M(T.ing),1)}${op("× "+P(raw.pctPpto)+" =")}${bx("Presupuesto fletes",M(T.ppto),1)}
   </div>
   <div class="flow">
-    ${bx("Fletes manifiestos ("+T.n+")",M(T.f))}${op("+")}${bx("Fletes contables "+P(raw.ajuste),M(adj))}${op("=")}${bx("Ejecución",M(T.ejec),1)}
+    ${bx("Fletes manifiestos ("+T.n+")",M(T.f))}${op("+")}${bx(AJ_ON?"Fletes contables "+P(raw.ajuste):"Fletes contables (no aplicados)",M(adj))}${op("=")}${bx("Ejecución",M(T.ejec),1)}
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;margin:10px 0">
     <div style="flex:2 1 340px">${varViz(T.ppto,T.ejec)}</div>
@@ -508,6 +519,15 @@ function render(){
   <div class="bar"><i style="width:${Math.min(100,pct*100)}%"></i></div>
   <div class="sub">Ejecución al <b>${P(pct)}</b> del presupuesto · equivale al ${T.ing?P(T.ejec/T.ing):"—"} del ingreso esperado (tope presupuestado: ${P(raw.pctPpto)}).</div>`;
   tbl("tAna",["Grupo","Ppto","Ejec","Var $ (fav +)","% ejec."],[[CLI||"Fletes",T.ppto?M(T.ppto):"—",M(T.ejec),T.ppto?M(varr):"—",T.ppto?P(pct):"—"]]);
+
+  /* rentabilidad por cliente (corte completo; ingreso esperado y ejecución de cada cliente) */
+  {const meta=1-PCT_CLI,rr=cls.map(c=>{const t_=totals(clienteView(RAW,[c],TG));return {c,ing:t_.ing,ej:t_.ejec,n:t_.n,rent:t_.ing>0?(t_.ing-t_.ejec)/t_.ing:null}}).sort((a,b)=>(b.ing>0)-(a.ing>0)||b.ing-a.ing||b.ej-a.ej);
+   const cel=x=>x.rent==null?"—":`<span class="rb"><i style="width:${Math.max(0,Math.min(100,x.rent*100))}%;background:${x.rent>=meta?"var(--good)":"var(--bad)"}"></i></span><b style="color:${x.rent>=meta?"var(--good)":"var(--bad)"}">${P(x.rent)}</b>`;
+   const tg={c:"Total (todos los clientes)",ing:TG.ing,ej:TG.ejec,rent:TG.ing>0?(TG.ing-TG.ejec)/TG.ing:null};
+   $("rentNote").innerHTML="Rentabilidad = (Ingreso esperado − Ejecución) ÷ Ingreso esperado de cada cliente, sobre el corte completo (no depende del filtro de fechas). Verde = alcanza o supera la meta de <b>"+P(meta)+"</b> (1 − "+P(PCT_CLI)+" del presupuesto); rojo = por debajo. Sin ingreso en las hojas SUPUESTOS/REMESAS el % no se puede calcular (—). Haz clic en un cliente para filtrar el dash por él.";
+   $("tRent").innerHTML="<thead><tr>"+["Cliente","Manifiestos","Ingreso esperado","Ejecución (fletes)","Rentabilidad $","% Rentabilidad"].map(h=>`<th>${h}</th>`).join("")+"</tr></thead><tbody>"+
+     rr.map(x=>`<tr data-c="${escH(x.c)}" class="${CLISEL.has(x.c)?"sel":""}" style="cursor:pointer"><td>${escH(x.c)}</td><td>${x.n}</td><td>${x.ing>0?M(x.ing):"—"}</td><td>${M(x.ej)}</td><td>${x.rent==null?"—":M(x.ing-x.ej)}</td><td style="white-space:nowrap">${cel(x)}</td></tr>`).join("")+
+     `<tr style="font-weight:700"><td>${tg.c}</td><td>${RAW.manifs.length}</td><td>${M(tg.ing)}</td><td>${M(tg.ej)}</td><td>${tg.rent==null?"—":M(tg.ing-tg.ej)}</td><td style="white-space:nowrap">${cel(tg)}</td></tr></tbody>`;}
 
   /* por día */
   const dia=agg(rows,r=>r[0]).sort((a,b)=>a.k<b.k?-1:1);
@@ -581,7 +601,7 @@ function render(){
 }
 
 /* ---------- detalle de ocupación por regional (pop-up) ---------- */
-let CLISEL=new Set();
+let CLISEL=new Set(),AJ_ON=true; /* AJ_ON: aplicar o no el ajuste de fletes contables a la ejecución */
 let OCC={rows:[],d1:"",d2:""},OCC_REG=null,OCC_B=-1;
 const URB=r=>/^URBANO/i.test(String(r[9]||"").trim()),LIM=r=>URB(r)?1.75:1.3;
 const ALR=r=>r[6]>r[7]*LIM(r); /* alerta: el peso usado (real o declarado) supera el 130 % de lo que carga el vehículo (175 % si la ruta es urbana) */
@@ -727,6 +747,8 @@ function tab(x){$("tabA").hidden=x!=="A";$("tabB").hidden=x!=="B";$("tbA").class
   safe(()=>localStorage.setItem("fletes_tab",x));Object.values(charts).forEach(c=>c.resize())}
 $("tbA").onclick=()=>tab("A");$("tbB").onclick=()=>tab("B");
 ["d1","d2"].forEach(i=>$(i).addEventListener("change",render));
+$("ajT").addEventListener("change",e=>{AJ_ON=e.target.checked;render()});
+$("tRent").addEventListener("click",e=>{const r=e.target.closest("tr[data-c]");if(!r) return;const c=r.dataset.c;CLISEL.has(c)?CLISEL.delete(c):CLISEL.add(c);render()});
 (function(){const P_=$("cliP"),B=$("cliBtn"),open=v=>{P_.hidden=!v;B.setAttribute("aria-expanded",v)};
   B.addEventListener("click",e=>{e.stopPropagation();open(P_.hidden);if(!P_.hidden)$("cliQ").focus()});
   document.addEventListener("click",e=>{if(!$("cli").contains(e.target)) open(false)});
