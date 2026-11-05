@@ -382,15 +382,18 @@ function gauge(v,meta){
   const cx=110,cy=105,r=88,pt=(f,rr=r)=>[cx+rr*Math.cos(Math.PI*(1-f)),cy-rr*Math.sin(Math.PI*(1-f))];
   const arc=(a,b)=>{const [x1,y1]=pt(a),[x2,y2]=pt(b);return `M${x1.toFixed(1)} ${y1.toFixed(1)}A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`};
   const f=v==null?0:Math.max(0,Math.min(1,v)), [nx,ny]=pt(f,r-14), [mx1,my1]=pt(meta,r-12), [mx2,my2]=pt(meta,r+8), [lx,ly]=pt(meta,r+20);
-  const ok=v!=null&&v>=meta, col=v==null?"var(--muted)":ok?"var(--good)":"var(--bad)";
-  return `<svg viewBox="0 -14 220 149" role="img" aria-label="Rentabilidad ${v==null?"sin dato":P(v)}, meta ${P(meta)}" style="max-width:300px;width:100%">
-    <path d="${arc(0,meta)}" fill="none" stroke="var(--bad)" stroke-width="14" opacity=".35"/>
+  /* zonas: rojo 0–12 %, amarillo 12,01–35,99 %, verde desde la meta (36 %) */
+  const LOW=0.12, pc=v==null?null:Math.round(v*10000)/100, zone=pc==null?"n":pc<=LOW*100?"r":pc<meta*100?"a":"g",
+    col=zone==="n"?"var(--muted)":zone==="r"?"var(--bad)":zone==="a"?"var(--warn)":"var(--good)", txt=zone==="a"?"var(--ink)":col;
+  return `<svg viewBox="0 -14 220 149" role="img" aria-label="Rentabilidad ${v==null?"sin dato":P(v)}, ${zone==="r"?"zona roja":zone==="a"?"zona amarilla":zone==="g"?"zona verde":""}, meta ${P(meta)}" style="max-width:300px;width:100%">
+    <path d="${arc(0,LOW)}" fill="none" stroke="var(--bad)" stroke-width="14" opacity=".35"/>
+    <path d="${arc(LOW,meta)}" fill="none" stroke="var(--warn)" stroke-width="14" opacity=".45"/>
     <path d="${arc(meta,1)}" fill="none" stroke="var(--good)" stroke-width="14" opacity=".35"/>
     <path d="${arc(0,f)}" fill="none" stroke="${col}" stroke-width="14"/>
     <line x1="${mx1.toFixed(1)}" y1="${my1.toFixed(1)}" x2="${mx2.toFixed(1)}" y2="${my2.toFixed(1)}" stroke="var(--ink)" stroke-width="2"/>
     <text x="${lx.toFixed(1)}" y="${(ly-2).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--ink2)">meta ${P(meta)}</text>
     <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="5" fill="var(--ink)"/>
-    <text x="${cx}" y="${cy+26}" text-anchor="middle" font-size="22" font-weight="700" fill="${col}">${v==null?"—":P(v)}</text>
+    <text x="${cx}" y="${cy+26}" text-anchor="middle" font-size="22" font-weight="700" fill="${txt}">${v==null?"—":P(v)}</text>
     <text x="14" y="${cy+14}" font-size="9" fill="var(--muted)">0 %</text><text x="206" y="${cy+14}" text-anchor="end" font-size="9" fill="var(--muted)">100 %</text></svg>`;
 }
 function varViz(ppto,ejec){
