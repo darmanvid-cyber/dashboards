@@ -278,6 +278,7 @@
       <p class="ig-sub">Millones · acumulado enero – <span class="ig-mes-l">—</span> · <span class="ig-filt-l">—</span> · clic en un encabezado para ordenar</p>
       <p class="ig-note ig-grp-hint">Elige un grupo (clic en la tabla de grupos o en el filtro Grupo) para ver el detalle por cuenta contable.</p>
       <p class="ig-hsub ig-grp-on" style="padding-left:0;margin:0 0 var(--cds-gap-sm)">Algunas cuentas del presupuesto tienen otro nombre que la cuenta contable (por ejemplo «Cargue y descargue carga masiva» vs «Cargue y descargue»): compara el total en la tabla de grupos.</p>
+      <p class="ig-grp-on" style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="acu-cta-xls">Descargar Excel</button></p>
       <div class="ig-tablewrap ig-grp-on">
         <table class="ig-table" id="acu-cuentas" data-source="por_cuenta" data-row-key="periodo,mes,responsable,clase,unidad,grupo,cuenta">
           <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th></tr></thead>
@@ -336,7 +337,7 @@
       <p class="ig-sub">Millones · solo <span class="ig-mes-l">—</span> · <span class="ig-filt-l">—</span> · clic en una cuenta para ver su detalle por descripción, tercero y valor · clic en un encabezado para ordenar</p>
       <p class="ig-note ig-grp-hint">Elige un grupo (clic en la tabla de grupos o en el filtro Grupo) para ver el detalle por cuenta contable.</p>
       <p class="ig-hsub ig-grp-on" style="padding-left:0;margin:0 0 var(--cds-gap-sm)">Algunas cuentas del presupuesto tienen otro nombre que la cuenta contable (por ejemplo «Cargue y descargue carga masiva» vs «Cargue y descargue»): compara el total en la tabla de grupos.</p>
-      <p class="ig-grp-on" style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="mes-cta-all">Expandir todas las cuentas</button></p>
+      <p class="ig-grp-on" style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="mes-cta-all">Expandir todas las cuentas</button> <button type="button" class="ig-det-btn" id="mes-cta-xls">Descargar Excel</button></p>
       <div class="ig-tablewrap ig-grp-on">
         <table class="ig-table" id="mes-cuentas" data-source="por_cuenta" data-row-key="periodo,mes,responsable,clase,unidad,grupo,cuenta">
           <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th><th data-field="_det">Detalle</th></tr></thead>
@@ -905,6 +906,51 @@
     setText(d, isN(r.var_pct) ? P(Math.abs(r.var_pct)) + (r.var >= 0 ? ' de ahorro' : ' de sobrecosto') : '', tone(r.var));
   }
 
+  // ---- Exportar a Excel (.xlsx) sin librerías: zip sin comprimir + hojas XML ----
+  const crcT = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (b) => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = crcT[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  const zipStore = (files) => {
+    const te = new TextEncoder(), parts = [], cd = []; let off = 0;
+    for (const [name, text] of files) {
+      const nb = te.encode(name), data = te.encode(text), crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(12, 0x21, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, nb.length, true);
+      parts.push(new Uint8Array(lh.buffer), nb, data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(14, 0x21, true);
+      ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, nb.length, true); ch.setUint32(42, off, true);
+      cd.push(new Uint8Array(ch.buffer), nb);
+      off += 30 + nb.length + data.length;
+    }
+    const cdSize = cd.reduce((a, x) => a + x.length, 0), end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, cdSize, true); end.setUint32(16, off, true);
+    return new Blob([...parts, ...cd, new Uint8Array(end.buffer)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  };
+  const xe = (t) => String(t).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const colL = (i) => String.fromCharCode(65 + i);
+  // celdas: texto | número | {v, s} con s = estilo (1 negrita, 2 #,##0, 3 0.0%, 4 negrita #,##0, 5 negrita 0.0%)
+  const sheetXml = (rows, widths) => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols>'
+    + widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('') + '</cols><sheetData>'
+    + rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((c, ci) => {
+      const o = c !== null && typeof c === 'object' ? c : { v: c }, ref = colL(ci) + (ri + 1), st = o.s ? ` s="${o.s}"` : '';
+      if (o.v === null || o.v === undefined || o.v === '' || (typeof o.v === 'number' && !isFinite(o.v))) return '';
+      return typeof o.v === 'number' ? `<c r="${ref}"${st}><v>${o.v}</v></c>` : `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xe(o.v)}</t></is></c>`;
+    }).join('') + '</row>').join('') + '</sheetData></worksheet>';
+  const xlsxBlob = (sheets) => zipStore([
+    ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+      + sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') + '</Types>'],
+    ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'
+      + sheets.map((sh, i) => `<sheet name="${xe(sh.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets></workbook>'],
+    ['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')
+      + `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ['xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.0%"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="3" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/><xf numFmtId="164" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
+    ...sheets.map((sh, i) => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(sh.rows, sh.widths)]),
+  ]);
+  const descargar = (blob, nombre) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+
   function table(tbl, rows, keyCols, cols, sort, rowClick, isSel) {
     const [k, dir] = sort || [null, 1];
     if (k) rows.sort((a, b) => ['grupo', 'area', 'unidad', 'cuenta'].includes(k) ? dir * String(a[k]).localeCompare(String(b[k])) : dir * ((a[k] ?? -Infinity) - (b[k] ?? -Infinity)));
@@ -1011,11 +1057,29 @@
       add('Total · ' + L.length + (L.length === 1 ? ' línea' : ' líneas'), '', '$' + nf0.format(tot), 'hl');
       tb.append(body); wrap.append(tb); td.append(wrap); tr.append(td); return tr;
     };
+    const exportCuentas = (rows, periodo, conDetalle) => {
+      const num = (v) => (isN(v) ? v : null);
+      const filt = `Grupo: ${grp} · ${periodo === 'acum' ? 'Acumulado enero – mes ' + mes : 'Mes ' + mes} · Responsable: ${resp} · Clase: ${clase} · Unidad: ${uni} · Valores en pesos`;
+      const H = (...t) => t.map((x) => ({ v: x, s: 1 }));
+      const tot = rows.reduce((a, r) => ({ p: a.p + (r.presupuesto || 0), e: a.e + (r.ejecutado || 0), v: a.v + (r.var || 0) }), { p: 0, e: 0, v: 0 });
+      const cuentas = [[{ v: 'Cuentas del grupo ' + grp, s: 1 }], [filt], [], H('Cuenta', 'Presupuesto', 'Ejecutado', 'Variación $', 'Variación %'),
+        ...rows.map((r) => [r.cuenta, { v: num(r.presupuesto), s: 2 }, { v: num(r.ejecutado), s: 2 }, { v: num(r.var), s: 2 }, { v: num(r.var_pct), s: 3 }]),
+        [{ v: 'Total', s: 1 }, { v: tot.p, s: 4 }, { v: tot.e, s: 4 }, { v: tot.v, s: 4 }, { v: tot.p ? tot.v / tot.p : null, s: 5 }]];
+      const sheets = [{ name: 'Cuentas', rows: cuentas, widths: [48, 18, 18, 18, 14] }];
+      if (conDetalle) {
+        const det = [H('Cuenta', 'Descripción (Column1)', 'Tercero', 'Valor')];
+        rows.forEach((r) => detalleCuenta(r.cuenta).forEach((x) => det.push([r.cuenta, x.desc || '(sin descripción)', x.tercero || '(sin tercero)', { v: x.valor, s: 2 }])));
+        sheets.push({ name: 'Detalle', rows: det, widths: [40, 55, 40, 18] });
+      }
+      const safe = String(grp).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      descargar(xlsxBlob(sheets), `Cuentas_${safe}_${periodo === 'acum' ? 'acumulado' : 'mes'}_${mes}.xlsx`);
+    };
     const openCta = (window.__openCta = window.__openCta || new Set());
     const cuentasTable = (tbl, periodo) => {
       if (grp === 'Todos') return;
       const rows = kRows.filter((r) => r.periodo === periodo && r.mes === mes && r.responsable === resp && r.clase === clase && r.unidad === uni && r.grupo === grp && (r.ejecutado || r.presupuesto));
       const keys = ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'];
+      const xb = $('#' + tbl.id.replace('-cuentas', '-cta-xls')); if (xb) xb.onclick = () => exportCuentas(rows, periodo, tbl.id === 'mes-cuentas');
       if (tbl.id !== 'mes-cuentas') { table(tbl, rows, keys, [['cuenta', (v) => v], ...costCols], sorts[tbl.id]); return; }
       const ok = (r) => openCta.has(mes + '|' + grp + '|' + r.cuenta);
       const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
