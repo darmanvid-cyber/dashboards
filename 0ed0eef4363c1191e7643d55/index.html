@@ -573,7 +573,8 @@ function render(){
     [x.k,x.n,"$"+nf.format(x.min),"$"+nf.format(x.med),"$"+nf.format(x.max),x.ratio>=1.5?`<span class="tag bad">${x.ratio.toFixed(2)}×</span>`:x.ratio.toFixed(2)+"×",M(x.sobre)]));
 
   /* viajes por cliente y ruta */
-  {const urb_=r=>{const o=r[2].replace(" ATLANTICO","").trim().toUpperCase(),d=String(r[3]).trim().toUpperCase();return o===d||o.endsWith(" "+d)||d.endsWith(" "+o)||(o==="FUNZA"&&d.startsWith("BOGOTA"))||(d==="FUNZA"&&o.startsWith("BOGOTA"))||(o==="GIRARDOTA"&&d.startsWith("MEDELLIN"))||(d==="GIRARDOTA"&&o.startsWith("MEDELLIN"))||(o==="YUMBO"&&d==="CALI")||(d==="YUMBO"&&o==="CALI")},
+  {const URB_PARES=[["FUNZA","BOGOTA"],["GIRARDOTA","MEDELLIN"],["YUMBO","CALI"],["FUNZA","SOACHA"],["YUMBO","TULUA"],["BUCARAMANGA","FLORIDA BLANCA"],["BUCARAMANGA","PIEDECUESTA"],["GIRARDOTA","RIONEGRO"]],
+   urb_=r=>{const o=r[2].replace(" ATLANTICO","").trim().toUpperCase(),d=String(r[3]).trim().toUpperCase();return o===d||o.endsWith(" "+d)||d.endsWith(" "+o)||URB_PARES.some(([a,b])=>(o.startsWith(a)&&d.startsWith(b))||(d.startsWith(a)&&o.startsWith(b)))},
    cr=agg(rows.filter(r=>esFMC(r[11]||"")&&!urb_(r)),r=>(r[11]||"N/D")+"\u0001"+r[2].replace(" ATLANTICO","")+" → "+r[3]).filter(o=>o.n>=3),tot={};
    cr.forEach(o=>{const c=o.k.split("\u0001")[0];tot[c]=(tot[c]||0)+o.n});
    cr.sort((x,y)=>tot[y.k.split("\u0001")[0]]-tot[x.k.split("\u0001")[0]]||x.k.split("\u0001")[0].localeCompare(y.k.split("\u0001")[0])||y.n-x.n);
