@@ -525,17 +525,17 @@ function applyMonths(src){let a=+$("m1").value,b=+$("m2").value;if(a>b){if(src==
 function syncM(){const [a,b]=MR();$("m1").value=a;$("m2").value=$("d2").value?b:(RAW.mesCost||12)}
 function renderMes(){
   const mc=RAW.mesCost||12,mi=RAW.mesIng||12,[a,b]=MR(),ms=[];for(let m=Math.max(a,1);m<=Math.min(b,mc);m++)ms.push(m);
-  const fm=m=>RAW.mon.man[m]||0,fcn=m=>RAW.mon.con[m]||0;
+  const fm=m=>RAW.mon.man[m]||0,fcn=m=>RAW.mon.con[m]||0,nm_=m=>RAW.manifs.filter(r=>+r[0].slice(5,7)===m).length;
   const I=m=>(RAW.mon.ing||{})[m]||0,Pp=m=>RAW.mon.ppto[m]||0,Ej=m=>RAW.mon.ejec[m]||0;
   $("mesTag").textContent="· "+ML12[ms[0]-1]+" a "+ML12[ms[ms.length-1]-1]+" · ejecución = contabilidad real";
   chart("cMesF",{type:"bar",data:{labels:ms.map(m=>ML12[m-1].slice(0,3)),datasets:[{label:"Presupuesto",data:ms.map(Pp),backgroundColor:css("--axis"),borderRadius:4},{label:"Ejecución real",data:ms.map(Ej),backgroundColor:css("--s1"),borderRadius:4},{label:"Ingreso real",data:ms.map(m=>m<=mi?I(m):null),backgroundColor:css("--s3"),borderRadius:4}]},
     options:{plugins:{legend:{display:true,labels:{color:css("--ink2")}},tooltip:tipM},scales:{y:{ticks:{callback:v=>(v/1e9).toLocaleString("es-CO")+" mil M"}}}}});
   let ap=0,ae=0;
   const rows=ms.map(m=>{const v=Pp(m)-Ej(m),rent=I(m)>0?(I(m)-Ej(m))/I(m):null;ap+=Pp(m);ae+=Ej(m);
-    return [ML12[m-1],I(m)>0?M(I(m)):"—",M(Pp(m)),M(Ej(m)),M(v),Pp(m)?P(Ej(m)/Pp(m)):"—",rent==null?"—":P(rent),M(fm(m)),M(fcn(m))]});
+    return [ML12[m-1],I(m)>0?M(I(m)):"—",M(Pp(m)),M(Ej(m)),M(v),Pp(m)?P(Ej(m)/Pp(m)):"—",rent==null?"—":P(rent),nf.format(nm_(m)),M(fm(m)),M(fcn(m))]});
   const tp=ms.reduce((x,m)=>x+Pp(m),0),te=ms.reduce((x,m)=>x+Ej(m),0),ti=ms.reduce((x,m)=>x+(m<=mi?I(m):0),0),te9=ms.filter(m=>m<=mi).reduce((x,m)=>x+Ej(m),0);
-  rows.push(["<b>Total</b>","<b>"+(ti?M(ti):"—")+"</b>","<b>"+M(tp)+"</b>","<b>"+M(te)+"</b>","<b>"+M(tp-te)+"</b>","<b>"+(tp?P(te/tp):"—")+"</b>","<b>"+(ti?P((ti-te9)/ti):"—")+"</b>","<b>"+M(ms.reduce((x,m)=>x+fm(m),0))+"</b>","<b>"+M(ms.reduce((x,m)=>x+fcn(m),0))+"</b>"]);
-  tbl("tMes",["Mes","Ingreso real","Presupuesto","Ejecución real","Variación (fav +)","% ejec.","Rentab.","Fletes de manifiestos","Demás contables"],rows);
+  rows.push(["<b>Total</b>","<b>"+(ti?M(ti):"—")+"</b>","<b>"+M(tp)+"</b>","<b>"+M(te)+"</b>","<b>"+M(tp-te)+"</b>","<b>"+(tp?P(te/tp):"—")+"</b>","<b>"+(ti?P((ti-te9)/ti):"—")+"</b>","<b>"+nf.format(ms.reduce((x,m)=>x+nm_(m),0))+"</b>","<b>"+M(ms.reduce((x,m)=>x+fm(m),0))+"</b>","<b>"+M(ms.reduce((x,m)=>x+fcn(m),0))+"</b>"]);
+  tbl("tMes",["Mes","Ingreso real","Presupuesto","Ejecución real","Variación (fav +)","% ejec.","Rentab.","Manifiestos","Fletes de manifiestos","Demás contables"],rows);
 }
 
 /* ---------- render ---------- */
@@ -557,7 +557,7 @@ function render(){
   $("sub").textContent=(raw.corte||"")+" · manifiestos del "+T.min+" al "+T.max+" · "+nf.format(raw.cajas.length)+" pedidos";
 
   const kp=[
-    ["Fletes de manifiestos",M(T.fm),"MANUAL FLETES · "+N+" manifiestos operativos"],
+    ["Manifiestos",nf.format(N),"año completo: "+nf.format(RAW.manifs.length)+" (sin anulados)"],["Fletes de manifiestos",M(T.fm),"MANUAL FLETES · costo prom. contable "+(N?"$"+nf.format(T.fm/N):"—")],
     ["Costo prom. / manifiesto",N?"$"+nf.format(F/N):"—","operativo (Analisis Manifiestos) · mediana $"+nf.format(median(rows.map(r=>r[7])))],
     ["Ritmo diario",dias?M(F/dias):"—",dias+" días con despacho"],
     ["Cajas (piezas)",nf.format(T.c),(T.c?P(T.ent/T.c):"—")+" entregadas"],
