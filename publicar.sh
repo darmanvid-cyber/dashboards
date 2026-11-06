@@ -13,6 +13,7 @@ if 'name="robots"' not in s:
     s = s.replace('<head>', '<head><meta name="robots" content="noindex,nofollow">', 1)
 open(sys.argv[2], 'w', encoding='utf-8').write(s)
 PY
+  python3 poner_version.py --version 3.0 "$token/index.html" >/dev/null
 done < enlaces.tsv
 printf 'User-agent: *\nDisallow: /\n' > robots.txt
 touch .nojekyll
