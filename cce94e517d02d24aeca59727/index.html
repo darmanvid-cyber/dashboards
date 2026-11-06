@@ -450,7 +450,7 @@
       <div class="ig-card ig-kpi"><div class="ig-lbl">Presupuesto anual</div><div class="ig-num" id="sal-k1">—</div></div>
       <div class="ig-card ig-kpi"><div class="ig-lbl">Ejecutado acumulado</div><div class="ig-num" id="sal-k2">—</div></div>
       <div class="ig-card ig-kpi"><div class="ig-lbl">Saldo por ejecutar</div><div class="ig-num" id="sal-k3">—</div></div>
-      <div class="ig-card ig-kpi ig-gauge" id="sal-gauge"><div class="ig-lbl">% consumido del ppto anual</div><svg viewBox="0 0 120 74" role="img" aria-label="Porcentaje del presupuesto anual consumido"><path class="g-trk" d="M10 64 A50 50 0 0 1 110 64" pathLength="100"/><path class="g-val" d="M10 64 A50 50 0 0 1 110 64" pathLength="100" stroke-dasharray="0 100"/><line class="g-tick" x1="0" y1="0" x2="0" y2="0"/><text class="g-pct" x="60" y="58">—</text></svg><div class="ig-ref g-ref">—</div></div>
+      <div class="ig-card ig-kpi ig-gauge" id="sal-gauge"><div class="ig-lbl">% consumido del ppto anual</div><svg viewBox="0 0 120 74" role="img" aria-label="Porcentaje del presupuesto anual consumido"><path class="g-trk" d="M10.36 58.01 A50 50 0 0 1 109.64 58.01" pathLength="100"/><path class="g-val" d="M10.36 58.01 A50 50 0 0 1 109.64 58.01" pathLength="100" stroke-dasharray="0 100"/><line class="g-tick" x1="0" y1="0" x2="0" y2="0"/><text class="g-pct" x="60" y="58">—</text></svg><div class="ig-ref g-ref">—</div></div>
     </div>
     <section class="ig-card">
       <h3>Saldo por grupo de cuenta</h3>
@@ -688,6 +688,8 @@
   const M = (v) => !isN(v) ? '—' : Math.abs(v) < 1e6 && Math.abs(v) >= 500 ? (v < 0 ? '−' : '') + '$' + nf1.format(Math.abs(v) / 1e3) + ' mil'
     : (v < 0 && Math.abs(v) >= 5e4 ? '−' : '') + '$' + (Math.abs(v) >= 1e8 ? nf0 : nf1).format(Math.abs(v) / 1e6) + ' M';
   const Ms = (v) => !isN(v) ? '—' : (v >= 500 ? '+' : '') + M(v);
+  // medidor: el arco va inscrito 0,12 rad por extremo para que las puntas redondeadas (media línea de grosor) no pasen de la marca; v = fracción 0–1
+  const gDash = (v) => Math.max(0, (Math.PI * v - 0.24) / (Math.PI - 0.24)) * 100 + ' 100';
   // unidad de los ejes: miles si todo el gráfico es menor a 1 M
   const unitOf = (mx) => mx < 1e6 ? [1e3, 'Miles'] : [1e6, 'Millones'];
   const setUnit = (box, lbl) => { const sub = box.closest('.ig-card'); const p = sub && sub.querySelector('.ig-sub'); if (p && p.firstChild && p.firstChild.nodeType === 3) p.firstChild.textContent = p.firstChild.textContent.replace(/^(Millones|Miles)/, lbl); };
@@ -889,14 +891,14 @@
     let gc = box.querySelector('.ig-gauge');
     if (!gc) {
       gc = document.createElement('div'); gc.className = 'ig-card ig-kpi ig-gauge';
-      gc.innerHTML = '<div class="ig-lbl">% de ejecución vs. ppto</div><svg viewBox="0 0 120 74" role="img" aria-label="Porcentaje de ejecución frente al presupuesto"><path class="g-trk" d="M10 64 A50 50 0 0 1 110 64" pathLength="100"/><path class="g-val" d="M10 64 A50 50 0 0 1 110 64" pathLength="100" stroke-dasharray="0 100"/><line class="g-tick" x1="0" y1="0" x2="0" y2="0"/><text class="g-pct" x="60" y="58">—</text></svg><div class="ig-ref g-ref">—</div>';
+      gc.innerHTML = '<div class="ig-lbl">% de ejecución vs. ppto</div><svg viewBox="0 0 120 74" role="img" aria-label="Porcentaje de ejecución frente al presupuesto"><path class="g-trk" d="M10.36 58.01 A50 50 0 0 1 109.64 58.01" pathLength="100"/><path class="g-val" d="M10.36 58.01 A50 50 0 0 1 109.64 58.01" pathLength="100" stroke-dasharray="0 100"/><line class="g-tick" x1="0" y1="0" x2="0" y2="0"/><text class="g-pct" x="60" y="58">—</text></svg><div class="ig-ref g-ref">—</div>';
       box.append(gc);
     }
     {
       const an = r && r.periodo === 'acum', base = r ? (an ? r.ppto_anual : r.presupuesto) : 0;
       const ok = r && isN(r.ejecutado) && isN(base) && base > 0, pc = ok ? r.ejecutado / base : null, gv = gc.querySelector('.g-val');
       gc.querySelector('.ig-lbl').textContent = an ? '% ejecutado del ppto anual' : '% de ejecución vs. ppto del mes';
-      gv.setAttribute('stroke-dasharray', (ok ? Math.min(pc, 1) * 100 : 0) + ' 100'); const ex = an ? r.mes / 12 : 1, ang = Math.PI * (1 - ex), tk = gc.querySelector('.g-tick');
+      gv.setAttribute('stroke-dasharray', ok ? gDash(Math.min(pc, 1)) : '0 100'); const ex = an ? r.mes / 12 : 1, ang = Math.PI * (1 - ex), tk = gc.querySelector('.g-tick');
       gv.classList.toggle('red', ok && pc > ex); gv.classList.toggle('amber', ok && pc <= ex && pc >= ex - 0.05);
       [['x1', 42], ['x2', 58]].forEach(([a, rad], i) => { tk.setAttribute(a, 60 + rad * Math.cos(ang)); tk.setAttribute('y' + (i + 1), 64 - rad * Math.sin(ang)); });
       gc.querySelector('.g-pct').textContent = ok ? P(pc) : '—';
@@ -1276,7 +1278,7 @@
       setText($('#sal-k1'), M(tot.ppto)); setText($('#sal-k2'), M(tot.ejec));
       setText($('#sal-k3'), M(tot.saldo), tot.saldo < 0 ? 'ig-bad' : ''); {
         const gc = $('#sal-gauge'), pc = tot.consumo, ok = isN(pc), gv = gc.querySelector('.g-val'), ang = Math.PI * (1 - cal), tk = gc.querySelector('.g-tick');
-        gv.setAttribute('stroke-dasharray', (ok ? Math.max(0, Math.min(pc, 1)) * 100 : 0) + ' 100');
+        gv.setAttribute('stroke-dasharray', ok ? gDash(Math.max(0, Math.min(pc, 1))) : '0 100');
         gv.classList.toggle('red', ok && pc > cal); gv.classList.toggle('amber', ok && pc <= cal && pc >= cal - 0.05);
         [['x1', 42], ['x2', 58]].forEach(([a, rad], i) => { tk.setAttribute(a, 60 + rad * Math.cos(ang)); tk.setAttribute('y' + (i + 1), 64 - rad * Math.sin(ang)); });
         gc.querySelector('.g-pct').textContent = ok ? P(pc) : '—';
