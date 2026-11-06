@@ -86,7 +86,10 @@
 #dash-root .ig-hsub { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 2px 0 0; padding-left: calc(var(--cds-pad-sm) + 4px); }
 #dash-root .ig-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--cds-gap-md); }
 #dash-root .ig-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
-#dash-root .ig-kpi { border-top: 3px solid var(--ig-mid); }
+#dash-root .ig-kpi { border-left: 4px solid var(--ig-mid); }
+#dash-root .ig-kpi[data-sem="red"] { border-left-color: var(--ig-red); }
+#dash-root .ig-kpi[data-sem="amber"] { border-left-color: var(--ig-amber); }
+#dash-root .ig-kpi[data-sem="ok"] { border-left-color: var(--ig-ok); }
 #dash-root .ig-gauge svg { display: block; width: 100%; max-width: 11rem; height: auto; margin: var(--cds-gap-xs) auto 0; }
 #dash-root .ig-gauge .g-trk { fill: none; stroke: var(--color-border-line); stroke-width: 12; stroke-linecap: round; }
 #dash-root .ig-gauge .g-val { fill: none; stroke: var(--ig-mid); stroke-width: 12; stroke-linecap: round; }
@@ -905,6 +908,13 @@
       const has = r && isN(r.delta_ant);
       setText(dl, has ? Ms(r.delta_ant) : '—', has ? (r.delta_ant > 0 ? 'ig-bad' : r.delta_ant < 0 ? 'ig-good' : '') : '');
       setText(dd, has && isN(r.delta_ant_pct) ? P(r.delta_ant_pct, true) + ' frente a ' + MESES[r.mes - 2].toLowerCase() : '', has ? (r.delta_ant > 0 ? 'ig-bad' : 'ig-good') : '');
+    }
+    // semáforo de la línea lateral (solo Variación y medidor; Ejecución y Presupuesto siempre verdes): ejecutado ÷ ppto del período → ≥105 % rojo, 90–105 % amarillo, <90 % verde
+    {
+      const ratio = r && isN(r.ejecutado) && isN(r.presupuesto) && r.presupuesto > 0 ? r.ejecutado / r.presupuesto : null;
+      const sem = ratio === null ? '' : ratio >= 1.05 ? 'red' : ratio >= 0.9 ? 'amber' : 'ok';
+      [c].forEach((e) => { const k = e.closest('.ig-kpi'); if (sem) k.dataset.sem = sem; else delete k.dataset.sem; });
+      if (sem) gc.dataset.sem = sem; else delete gc.dataset.sem;
     }
     if (!r) { [a, b, c, d].forEach((e) => { setText(e, '—'); }); return; }
     setText(a, M(r.ejecutado)); setText(b, M(r.presupuesto)); setText(c, Ms(r.var), tone(r.var));
