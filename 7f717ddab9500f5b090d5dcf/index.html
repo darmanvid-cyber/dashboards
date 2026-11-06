@@ -288,7 +288,7 @@
       <p class="ig-sub">Millones · acumulado enero – <span class="ig-mes-l">—</span> · <span class="ig-filt-l">—</span> · clic en un encabezado para ordenar</p>
       <p class="ig-note ig-grp-hint">Elige un grupo (clic en la tabla de grupos o en el filtro Grupo) para ver el detalle por cuenta contable.</p>
       <p class="ig-hsub ig-grp-on" style="padding-left:0;margin:0 0 var(--cds-gap-sm)">Algunas cuentas del presupuesto tienen otro nombre que la cuenta contable (por ejemplo «Cargue y descargue carga masiva» vs «Cargue y descargue»): compara el total en la tabla de grupos.</p>
-      <p class="ig-grp-on" style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="acu-cta-xls">Descargar Excel</button></p>
+      <p style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="acu-cta-xls">Descargar Excel</button></p>
       <div class="ig-tablewrap ig-grp-on">
         <table class="ig-table" id="acu-cuentas" data-source="por_cuenta" data-row-key="periodo,mes,responsable,clase,unidad,grupo,cuenta">
           <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th></tr></thead>
@@ -347,7 +347,7 @@
       <p class="ig-sub">Millones · solo <span class="ig-mes-l">—</span> · <span class="ig-filt-l">—</span> · clic en una cuenta para ver su detalle por descripción, tercero y valor · clic en un encabezado para ordenar</p>
       <p class="ig-note ig-grp-hint">Elige un grupo (clic en la tabla de grupos o en el filtro Grupo) para ver el detalle por cuenta contable.</p>
       <p class="ig-hsub ig-grp-on" style="padding-left:0;margin:0 0 var(--cds-gap-sm)">Algunas cuentas del presupuesto tienen otro nombre que la cuenta contable (por ejemplo «Cargue y descargue carga masiva» vs «Cargue y descargue»): compara el total en la tabla de grupos.</p>
-      <p class="ig-grp-on" style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="mes-cta-all">Expandir todas las cuentas</button> <button type="button" class="ig-det-btn" id="mes-cta-xls">Descargar Excel</button></p>
+      <p style="margin:0 0 var(--cds-gap-sm)"><span class="ig-grp-on"><button type="button" class="ig-det-btn" id="mes-cta-all">Expandir todas las cuentas</button></span> <button type="button" class="ig-det-btn" id="mes-cta-xls">Descargar Excel</button></p>
       <div class="ig-tablewrap ig-grp-on">
         <table class="ig-table" id="mes-cuentas" data-source="por_cuenta" data-row-key="periodo,mes,responsable,clase,unidad,grupo,cuenta">
           <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th><th data-field="_det">Detalle</th></tr></thead>
@@ -1069,32 +1069,35 @@
       tb.append(body); wrap.append(tb); td.append(wrap); tr.append(td); return tr;
     };
     const exportCuentas = (rows, periodo) => {
+      const todos = grp === 'Todos';
       const num = (v) => (isN(v) ? v : null);
-      const filt = `Grupo: ${grp} · ${periodo === 'acum' ? 'Acumulado enero – mes ' + mes : 'Mes ' + mes} · Responsable: ${resp} · Clase: ${clase} · Unidad: ${uni} · Valores en pesos`;
+      const filt = `Grupo: ${todos ? 'todos los grupos' : grp} · ${periodo === 'acum' ? 'Acumulado enero – mes ' + mes : 'Mes ' + mes} · Responsable: ${resp} · Clase: ${clase} · Unidad: ${uni} · Valores en pesos`;
       const H = (...t) => t.map((x) => ({ v: x, s: 1 }));
       const tot = rows.reduce((a, r) => ({ p: a.p + (r.presupuesto || 0), e: a.e + (r.ejecutado || 0), v: a.v + (r.var || 0) }), { p: 0, e: 0, v: 0 });
-      const cuentas = [[{ v: 'Cuentas del grupo ' + grp, s: 1 }], [filt], [], H('Cuenta', 'Presupuesto', 'Ejecutado', 'Variación $', 'Variación %'),
-        ...rows.map((r) => [r.cuenta, { v: num(r.presupuesto), s: 2 }, { v: num(r.ejecutado), s: 2 }, { v: num(r.var), s: 2 }, { v: num(r.var_pct), s: 3 }]),
-        [{ v: 'Total', s: 1 }, { v: tot.p, s: 4 }, { v: tot.e, s: 4 }, { v: tot.v, s: 4 }, { v: tot.p ? tot.v / tot.p : null, s: 5 }]];
-      const sheets = [{ name: 'Cuentas', rows: cuentas, widths: [48, 18, 18, 18, 14] }];
+      const cuentas = [[{ v: todos ? 'Cuentas de todos los grupos' : 'Cuentas del grupo ' + grp, s: 1 }], [filt], [], H(...(todos ? ['Grupo'] : []), 'Cuenta', 'Presupuesto', 'Ejecutado', 'Variación $', 'Variación %'),
+        ...rows.map((r) => [...(todos ? [r.grupo] : []), r.cuenta, { v: num(r.presupuesto), s: 2 }, { v: num(r.ejecutado), s: 2 }, { v: num(r.var), s: 2 }, { v: num(r.var_pct), s: 3 }]),
+        [...(todos ? [''] : []), { v: 'Total', s: 1 }, { v: tot.p, s: 4 }, { v: tot.e, s: 4 }, { v: tot.v, s: 4 }, { v: tot.p ? tot.v / tot.p : null, s: 5 }]];
+      const sheets = [{ name: 'Cuentas', rows: cuentas, widths: [...(todos ? [24] : []), 48, 18, 18, 18, 14] }];
       {
-        const ctas = new Set(rows.map((r) => r.cuenta));
-        const L = detRows.filter((d) => ctas.has(d.Cuenta) && d.Grupo === grp && (periodo === 'acum' ? Number(d.mes) <= mes : Number(d.mes) === mes) && (resp === 'Todos' || d.Responsable === resp) && (clase === 'Todas' || d.Clase === clase) && (uni === 'Todas' || d.Unidad === uni))
-          .sort((x, y) => String(x.Cuenta).localeCompare(String(y.Cuenta)) || Number(x.mes) - Number(y.mes) || Math.abs(y.valor) - Math.abs(x.valor));
-        const det = [H('Mes', 'Cuenta', 'Cuenta contable', 'Descripción (Column1)', 'Tercero', 'Valor'),
-          ...L.map((d) => [Number(d.mes), d.Cuenta, d.CuentaContable || d.Cuenta, d.Column1 || '(sin descripción)', d.Tercero || '(sin tercero)', { v: Number(d.valor), s: 2 }])];
-        det.push([{ v: 'Total', s: 1 }, '', '', '', '', { v: L.reduce((t, d) => t + Number(d.valor), 0), s: 4 }]);
-        sheets.push({ name: 'Detalle', rows: det, widths: [6, 30, 36, 55, 40, 18] });
+        const ctas = new Set(rows.map((r) => r.grupo + '\u0001' + r.cuenta));
+        const L = detRows.filter((d) => ctas.has(d.Grupo + '\u0001' + d.Cuenta) && (periodo === 'acum' ? Number(d.mes) <= mes : Number(d.mes) === mes) && (resp === 'Todos' || d.Responsable === resp) && (clase === 'Todas' || d.Clase === clase) && (uni === 'Todas' || d.Unidad === uni))
+          .sort((x, y) => (todos ? String(x.Grupo).localeCompare(String(y.Grupo)) : 0) || String(x.Cuenta).localeCompare(String(y.Cuenta)) || Number(x.mes) - Number(y.mes) || Math.abs(y.valor) - Math.abs(x.valor));
+        const det = [H('Mes', ...(todos ? ['Grupo'] : []), 'Cuenta', 'Cuenta contable', 'Descripción (Column1)', 'Tercero', 'Valor'),
+          ...L.map((d) => [Number(d.mes), ...(todos ? [d.Grupo] : []), d.Cuenta, d.CuentaContable || d.Cuenta, d.Column1 || '(sin descripción)', d.Tercero || '(sin tercero)', { v: Number(d.valor), s: 2 }])];
+        det.push([{ v: 'Total', s: 1 }, ...(todos ? [''] : []), '', '', '', '', { v: L.reduce((t, d) => t + Number(d.valor), 0), s: 4 }]);
+        sheets.push({ name: 'Detalle', rows: det, widths: [6, ...(todos ? [22] : []), 30, 36, 55, 40, 18] });
       }
-      const safe = String(grp).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const safe = String(todos ? 'todos_los_grupos' : grp).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
       descargar(xlsxBlob(sheets), `Cuentas_${safe}_${periodo === 'acum' ? 'acumulado' : 'mes'}_${mes}.xlsx`);
     };
     const openCta = (window.__openCta = window.__openCta || new Set());
     const cuentasTable = (tbl, periodo) => {
+      const base = kRows.filter((r) => r.periodo === periodo && r.mes === mes && r.responsable === resp && r.clase === clase && r.unidad === uni && (r.ejecutado || r.presupuesto));
+      const xb = $('#' + tbl.id.replace('-cuentas', '-cta-xls'));
+      if (xb) { xb.textContent = grp === 'Todos' ? 'Descargar Excel · todos los grupos' : 'Descargar Excel'; xb.onclick = () => exportCuentas(grp === 'Todos' ? base.slice().sort((a, b) => String(a.grupo).localeCompare(String(b.grupo)) || String(a.cuenta).localeCompare(String(b.cuenta))) : base.filter((r) => r.grupo === grp), periodo); }
       if (grp === 'Todos') return;
-      const rows = kRows.filter((r) => r.periodo === periodo && r.mes === mes && r.responsable === resp && r.clase === clase && r.unidad === uni && r.grupo === grp && (r.ejecutado || r.presupuesto));
+      const rows = base.filter((r) => r.grupo === grp);
       const keys = ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'];
-      const xb = $('#' + tbl.id.replace('-cuentas', '-cta-xls')); if (xb) xb.onclick = () => exportCuentas(rows, periodo);
       if (tbl.id !== 'mes-cuentas') { table(tbl, rows, keys, [['cuenta', (v) => v], ...costCols], sorts[tbl.id]); return; }
       const ok = (r) => openCta.has(mes + '|' + grp + '|' + r.cuenta);
       const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
