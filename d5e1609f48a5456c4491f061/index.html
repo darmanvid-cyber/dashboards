@@ -470,15 +470,19 @@
       <div class="ig-cmp-opts">
         <label>Periodo <select id="cta-per"><option value="acum">Acumulado enero – mes</option><option value="mes">Solo el mes</option></select></label>
         <label>Buscar <input type="search" id="cta-q" placeholder="Cuenta o grupo" aria-label="Buscar cuenta o grupo" style="font:inherit;padding:2px var(--cds-pad-sm);border:1px solid var(--color-border);border-radius:var(--cds-radius);background:var(--color-panel);color:var(--color-fg)"></label>
-        <button type="button" class="ig-det-btn" id="cta-all">Expandir todas</button>
         <button type="button" class="ig-det-btn" id="cta-xls">Descargar Excel</button>
       </div>
       <div class="ig-tablewrap">
         <table class="ig-table" id="cta-tabla">
-          <thead><tr><th data-field="grupo"><button data-k="grupo">Grupo</button></th><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th><th data-field="_det"></th></tr></thead>
+          <thead><tr><th data-field="grupo"><button data-k="grupo">Grupo</button></th><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
+    </section>
+    <section class="ig-card" id="cta-det-card">
+      <h3>Detalle de la cuenta <span id="cta-det-l">—</span></h3>
+      <p class="ig-sub">Clic en una cuenta de la tabla de arriba para ver su detalle por cuenta contable, descripción, tercero y valor</p>
+      <div id="cta-det-box"></div>
     </section>
   </section>
 
@@ -1311,16 +1315,14 @@
       const rows = kRows.filter((r) => r.periodo === per && r.mes === mes && r.responsable === resp && r.clase === clase && r.unidad === uni && (grp === 'Todos' || r.grupo === grp) && (r.ejecutado || r.presupuesto) && (!q || String(r.cuenta).toLowerCase().includes(q) || String(r.grupo).toLowerCase().includes(q)));
       const tot = rows.reduce((a, r) => ({ p: a.p + (r.presupuesto || 0), e: a.e + (r.ejecutado || 0) }), { p: 0, e: 0 });
       setText($('#cta-k1'), M(tot.p)); setText($('#cta-k2'), M(tot.e)); setText($('#cta-k3'), Ms(tot.p - tot.e), tone(tot.p - tot.e)); setText($('#cta-k4'), String(rows.length));
-      const key = (r) => 'c|' + per + '|' + mes + '|' + r.grupo + '|' + r.cuenta, ok = (r) => openCta.has(key(r));
-      const tbl = $('#cta-tabla');
-      const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
-      const all = $('#cta-all'), allOpen = rows.length && rows.every(ok);
-      all.textContent = allOpen ? 'Contraer todas' : 'Expandir todas';
-      all.onclick = () => { rows.forEach((r) => { allOpen ? openCta.delete(key(r)) : openCta.add(key(r)); }); draw(); };
+      const tbl = $('#cta-tabla'), kS = (r) => r.grupo + '\u0001' + r.cuenta;
+      const def = grp !== 'Todos' ? (rows.find((r) => r.cuenta === grp) || rows[0]) : rows[0];
+      const sel = window.__selCta && window.__selCta.p === per && rows.some((r) => kS(r) === window.__selCta.k) ? window.__selCta.k : (def ? kS(def) : null);
       $('#cta-xls').onclick = () => exportCuentas(rows.slice().sort((a, b) => String(a.grupo).localeCompare(String(b.grupo)) || String(a.cuenta).localeCompare(String(b.cuenta))), per);
-      table(tbl, rows, ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'], [['grupo', (v) => v], ['cuenta', (v, r) => (ok(r) ? '▾ ' : '▸ ') + v], ...costCols, ['_det', btn]], sorts['cta-tabla'], (r) => { ok(r) ? openCta.delete(key(r)) : openCta.add(key(r)); draw(); });
-      const trs = [...tbl.querySelectorAll('tbody > tr')], ncols = tbl.querySelectorAll('thead th').length;
-      for (let i = rows.length - 1; i >= 0; i--) if (ok(rows[i]) && trs[i]) trs[i].after(detalleRow(rows[i].cuenta, ncols, rows[i].grupo, per));
+      table(tbl, rows, ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'], [['grupo', (v) => v], ['cuenta', (v) => v], ...costCols], sorts['cta-tabla'], (r) => { window.__selCta = { k: kS(r), p: per }; draw(); }, (r) => kS(r) === sel);
+      const rs = rows.find((r) => kS(r) === sel), box = $('#cta-det-box'); box.replaceChildren();
+      setText($('#cta-det-l'), rs ? '«' + rs.cuenta + '» · ' + rs.grupo : '—');
+      if (rs) { const t = detalleRow(rs.cuenta, 1, rs.grupo, per).querySelector('td'); box.append(...t.childNodes); }
     }
 
     if (tab === 'saldos') {
