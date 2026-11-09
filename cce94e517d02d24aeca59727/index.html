@@ -287,13 +287,18 @@
       <p class="ig-sub">Millones · acumulado enero – <span class="ig-mes-l">—</span> · <span class="ig-filt-l">—</span> · clic en un encabezado para ordenar</p>
       <p class="ig-note ig-grp-hint">Elige un grupo (clic en la tabla de grupos o en el filtro Grupo) para ver el detalle por cuenta contable.</p>
       <p class="ig-hsub ig-grp-on" style="padding-left:0;margin:0 0 var(--cds-gap-sm)">Algunas cuentas del presupuesto tienen otro nombre que la cuenta contable (por ejemplo «Cargue y descargue carga masiva» vs «Cargue y descargue»): compara el total en la tabla de grupos.</p>
-      <p style="margin:0 0 var(--cds-gap-sm)"><span class="ig-grp-on"><button type="button" class="ig-det-btn" id="acu-cta-all">Expandir todas las cuentas</button> </span><button type="button" class="ig-det-btn" id="acu-cta-xls">Descargar Excel</button></p>
+      <p style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="acu-cta-xls">Descargar Excel</button></p>
       <div class="ig-tablewrap ig-grp-on">
         <table class="ig-table" id="acu-cuentas" data-source="por_cuenta" data-row-key="periodo,mes,responsable,clase,unidad,grupo,cuenta">
-          <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th><th data-field="_det">Detalle</th></tr></thead>
+          <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
+    </section>
+    <section class="ig-card ig-grp-on" id="acu-det-card">
+      <h3>Detalle de la cuenta <span id="acu-det-l">—</span></h3>
+      <p class="ig-sub">Acumulado enero – <span class="ig-mes-l">—</span> · clic en una cuenta de la tabla de arriba para ver su detalle por cuenta contable, descripción y tercero</p>
+      <div id="acu-det-box"></div>
     </section>
   </section>
 
@@ -1139,6 +1144,14 @@
       if (grp === 'Todos') return;
       const rows = base.filter((r) => r.grupo === grp);
       const keys = ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'];
+      if (tbl.id === 'acu-cuentas') {
+        let sel = window.__selAcu && window.__selAcu.g === grp && rows.some((r) => r.cuenta === window.__selAcu.c) ? window.__selAcu.c : (rows.find((r) => r.cuenta === grp) || rows[0] || {}).cuenta;
+        table(tbl, rows, keys, [['cuenta', (v) => v], ...costCols], sorts[tbl.id], (r) => { window.__selAcu = { g: grp, c: r.cuenta }; draw(); }, (r) => r.cuenta === sel);
+        setText($('#acu-det-l'), sel ? '«' + sel + '» · ' + grp : '—');
+        const box = $('#acu-det-box'); box.replaceChildren();
+        if (sel) { const t = detalleRow(sel, 1, grp, 'acum').querySelector('td'); box.append(...t.childNodes); }
+        return;
+      }
       const per = tbl.id === 'mes-cuentas' ? 'mes' : 'acum', kk = (r) => per + '|' + mes + '|' + grp + '|' + r.cuenta;
       const ok = (r) => openCta.has(kk(r));
       const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
