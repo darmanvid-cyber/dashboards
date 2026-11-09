@@ -1095,12 +1095,13 @@
         const cc = d.CuentaContable && d.CuentaContable !== cuenta ? d.CuentaContable : '', k = cc + '\u0001' + d.Column1 + '\u0001' + d.Tercero, o = m.get(k) || { cc, desc: d.Column1, tercero: d.Tercero, valor: 0 };
         o.valor += Number(d.valor); m.set(k, o);
       }
-      return [...m.values()].sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor));
+      const T = new Map(); for (const o of m.values()) T.set(o.cc, (T.get(o.cc) || 0) + o.valor);
+      return [...m.values()].sort((a, b) => Math.abs(T.get(b.cc)) - Math.abs(T.get(a.cc)) || (a.cc < b.cc ? -1 : a.cc > b.cc ? 1 : 0) || Math.abs(b.valor) - Math.abs(a.valor));
     };
     const detalleRow = (cuenta, ncols, g = grp, per = 'mes') => {
       const tr = document.createElement('tr'); tr.className = 'ig-det-row';
       const td = document.createElement('td'); td.colSpan = ncols;
-      const L = detalleCuenta(cuenta, g, per), MAX = 300, tot = L.reduce((s, x) => s + x.valor, 0);
+      const L = detalleCuenta(cuenta, g, per), MAX = 2000, tot = L.reduce((s, x) => s + x.valor, 0);
       if (!L.length) { td.textContent = per === 'acum' ? 'Sin movimientos contables en el periodo para esta cuenta.' : 'Sin movimientos contables en este mes para esta cuenta.'; td.className = 'ig-det-empty'; tr.append(td); return tr; }
       const wrap = document.createElement('div'); wrap.className = 'ig-det';
       const tb = document.createElement('table'); tb.className = 'ig-table';
@@ -1108,23 +1109,8 @@
       tb.innerHTML = '<thead><tr>' + (showCC ? '<th>Cuenta contable</th>' : '') + '<th>Descripción (Column1)</th><th>Tercero</th><th>Valor</th></tr></thead>';
       const body = document.createElement('tbody');
       const add = (a, b, c, cls, k) => { const r = document.createElement('tr'); if (cls) r.className = cls; (showCC ? [k || '', a, b, c] : [a, b, c]).forEach((v, i, arr) => { const x = document.createElement('td'); x.textContent = v; if (i < arr.length - 1) x.style.textAlign = 'left'; if (i < arr.length - 1) x.style.whiteSpace = 'normal'; r.append(x); }); body.append(r); };
-      if (showCC) {
-        const G = new Map();
-        for (const x of L) { const k = x.cc || cuenta; const o = G.get(k) || { k, v: 0, L: [] }; o.v += x.valor; o.L.push(x); G.set(k, o); }
-        [...G.values()].sort((p, q) => Math.abs(q.v) - Math.abs(p.v)).forEach((g) => {
-          const h = document.createElement('tr'); h.className = 'ig-cc-head'; h.style.cursor = 'pointer'; h.style.fontWeight = '600';
-          [ '▸ ' + g.k, g.L.length + (g.L.length === 1 ? ' línea' : ' líneas'), '', '$' + nf0.format(g.v)].forEach((v, i) => { const x = document.createElement('td'); x.textContent = v; if (i < 3) x.style.textAlign = 'left'; h.append(x); });
-          const kids = [];
-          g.L.slice(0, MAX).forEach((x) => { add(x.desc || '(sin descripción)', x.tercero || '(sin tercero)', '$' + nf0.format(x.valor), '', ''); const r = body.lastChild; r.style.display = 'none'; kids.push(r); });
-          if (g.L.length > MAX) { add('… y ' + (g.L.length - MAX) + ' líneas más', '', '$' + nf0.format(g.L.slice(MAX).reduce((t, x) => t + x.valor, 0)), '', ''); const r = body.lastChild; r.style.display = 'none'; kids.push(r); }
-          body.insertBefore(h, kids[0] || null);
-          let open = false;
-          h.addEventListener('click', () => { open = !open; kids.forEach((r) => { r.style.display = open ? '' : 'none'; }); h.firstChild.textContent = (open ? '▾ ' : '▸ ') + g.k; });
-        });
-      } else {
-        L.slice(0, MAX).forEach((x) => add(x.desc || '(sin descripción)', x.tercero || '(sin tercero)', '$' + nf0.format(x.valor), '', x.cc));
-        if (L.length > MAX) add('… y ' + (L.length - MAX) + ' líneas más', '', '$' + nf0.format(L.slice(MAX).reduce((s, x) => s + x.valor, 0)));
-      }
+      L.slice(0, MAX).forEach((x) => add(x.desc || '(sin descripción)', x.tercero || '(sin tercero)', '$' + nf0.format(x.valor), '', x.cc));
+      if (L.length > MAX) add('… y ' + (L.length - MAX) + ' líneas más', '', '$' + nf0.format(L.slice(MAX).reduce((s, x) => s + x.valor, 0)));
       add('Total · ' + L.length + (L.length === 1 ? ' línea' : ' líneas'), '', '$' + nf0.format(tot), 'hl');
       tb.append(body); wrap.append(tb); td.append(wrap); tr.append(td); return tr;
     };
@@ -1158,13 +1144,13 @@
       if (grp === 'Todos') return;
       const rows = base.filter((r) => r.grupo === grp);
       const keys = ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'];
-      if (tbl.id !== 'mes-cuentas') { table(tbl, rows, keys, [['cuenta', (v) => v], ...costCols], sorts[tbl.id]); return; }
-      const ok = (r) => openCta.has(mes + '|' + grp + '|' + r.cuenta);
+      const per = tbl.id === 'mes-cuentas' ? 'mes' : 'acum', kk = (r) => per + '|' + mes + '|' + grp + '|' + r.cuenta;
+      const ok = (r) => openCta.has(kk(r));
       const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
-      const all = $('#mes-cta-all'); if (all) { const allOpen = rows.length && rows.every(ok); all.textContent = allOpen ? 'Contraer todas las cuentas' : 'Expandir todas las cuentas'; all.onclick = () => { rows.forEach((r) => { const k = mes + '|' + grp + '|' + r.cuenta; allOpen ? openCta.delete(k) : openCta.add(k); }); dash.setParams({}); }; }
-      table(tbl, rows, keys, [['cuenta', (v, r) => (ok(r) ? '▾ ' : '▸ ') + v], ...costCols, ['_det', btn]], sorts[tbl.id], (r) => { const k = mes + '|' + grp + '|' + r.cuenta; openCta.has(k) ? openCta.delete(k) : openCta.add(k); dash.setParams({}); });
+      const all = $('#mes-cta-all'); if (all) { const allOpen = rows.length && rows.every(ok); all.textContent = allOpen ? 'Contraer todas las cuentas' : 'Expandir todas las cuentas'; all.onclick = () => { rows.forEach((r) => { const k = kk(r); allOpen ? openCta.delete(k) : openCta.add(k); }); dash.setParams({}); }; }
+      table(tbl, rows, keys, [['cuenta', (v, r) => (ok(r) ? '▾ ' : '▸ ') + v], ...costCols, ['_det', btn]], sorts[tbl.id], (r) => { const k = kk(r); openCta.has(k) ? openCta.delete(k) : openCta.add(k); dash.setParams({}); });
       const trs = [...tbl.querySelectorAll('tbody > tr')], ncols = tbl.querySelectorAll('thead th').length;
-      for (let i = rows.length - 1; i >= 0; i--) if (ok(rows[i]) && trs[i]) trs[i].after(detalleRow(rows[i].cuenta, ncols));
+      for (let i = rows.length - 1; i >= 0; i--) if (ok(rows[i]) && trs[i]) trs[i].after(detalleRow(rows[i].cuenta, ncols, grp, per));
     };
     const deltaCol = ['delta_ant', (v) => mes === 1 ? '—' : Ms(v), (r) => 'hide-sm ' + (isN(r.delta_ant) && r.delta_ant > 0 ? 'ig-bad' : isN(r.delta_ant) && r.delta_ant < 0 ? 'ig-good' : '')];
     const costCols = [['presupuesto', M], ['ejecutado', M], ['var', Ms, (r) => tone(r.var)], ['var_pct', (v) => P(v, true), (r) => 'hide-sm ' + tone(r.var)]];
