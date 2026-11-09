@@ -287,10 +287,10 @@
       <p class="ig-sub">Millones · acumulado enero – <span class="ig-mes-l">—</span> · <span class="ig-filt-l">—</span> · clic en un encabezado para ordenar</p>
       <p class="ig-note ig-grp-hint">Elige un grupo (clic en la tabla de grupos o en el filtro Grupo) para ver el detalle por cuenta contable.</p>
       <p class="ig-hsub ig-grp-on" style="padding-left:0;margin:0 0 var(--cds-gap-sm)">Algunas cuentas del presupuesto tienen otro nombre que la cuenta contable (por ejemplo «Cargue y descargue carga masiva» vs «Cargue y descargue»): compara el total en la tabla de grupos.</p>
-      <p style="margin:0 0 var(--cds-gap-sm)"><button type="button" class="ig-det-btn" id="acu-cta-xls">Descargar Excel</button></p>
+      <p style="margin:0 0 var(--cds-gap-sm)"><span class="ig-grp-on"><button type="button" class="ig-det-btn" id="acu-cta-all">Expandir todas las cuentas</button> </span><button type="button" class="ig-det-btn" id="acu-cta-xls">Descargar Excel</button></p>
       <div class="ig-tablewrap ig-grp-on">
         <table class="ig-table" id="acu-cuentas" data-source="por_cuenta" data-row-key="periodo,mes,responsable,clase,unidad,grupo,cuenta">
-          <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th></tr></thead>
+          <thead><tr><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th><th data-field="_det">Detalle</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -1142,7 +1142,7 @@
       const per = tbl.id === 'mes-cuentas' ? 'mes' : 'acum', kk = (r) => per + '|' + mes + '|' + grp + '|' + r.cuenta;
       const ok = (r) => openCta.has(kk(r));
       const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
-      const all = $('#mes-cta-all'); if (all) { const allOpen = rows.length && rows.every(ok); all.textContent = allOpen ? 'Contraer todas las cuentas' : 'Expandir todas las cuentas'; all.onclick = () => { rows.forEach((r) => { const k = kk(r); allOpen ? openCta.delete(k) : openCta.add(k); }); dash.setParams({}); }; }
+      const all = $('#' + tbl.id.replace('-cuentas', '-cta-all')); if (all) { const allOpen = rows.length && rows.every(ok); all.textContent = allOpen ? 'Contraer todas las cuentas' : 'Expandir todas las cuentas'; all.onclick = () => { rows.forEach((r) => { const k = kk(r); allOpen ? openCta.delete(k) : openCta.add(k); }); dash.setParams({}); }; }
       table(tbl, rows, keys, [['cuenta', (v, r) => (ok(r) ? '▾ ' : '▸ ') + v], ...costCols, ['_det', btn]], sorts[tbl.id], (r) => { const k = kk(r); openCta.has(k) ? openCta.delete(k) : openCta.add(k); dash.setParams({}); });
       const trs = [...tbl.querySelectorAll('tbody > tr')], ncols = tbl.querySelectorAll('thead th').length;
       for (let i = rows.length - 1; i >= 0; i--) if (ok(rows[i]) && trs[i]) trs[i].after(detalleRow(rows[i].cuenta, ncols, grp, per));
