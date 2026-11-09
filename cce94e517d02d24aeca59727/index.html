@@ -298,6 +298,7 @@
     <section class="ig-card ig-grp-on" id="acu-det-card">
       <h3>Detalle de la cuenta <span id="acu-det-l">—</span></h3>
       <p class="ig-sub">Acumulado enero – <span class="ig-mes-l">—</span> · clic en una cuenta de la tabla de arriba para ver su detalle por cuenta contable, descripción y tercero</p>
+      <p style="margin:0 0 var(--cds-gap-sm)"><label>Buscar <input type="search" id="acu-det-q" placeholder="Descripción, tercero o cuenta contable" aria-label="Buscar en el detalle" style="font:inherit;min-width:min(340px,100%);padding:2px var(--cds-pad-sm);border:1px solid var(--color-border);border-radius:var(--cds-radius);background:var(--color-panel);color:inherit"></label></p>
       <div id="acu-det-box"></div>
     </section>
   </section>
@@ -477,6 +478,7 @@
     <section class="ig-card" id="cta-det-card">
       <h3>Detalle de la cuenta <span id="cta-det-l">—</span></h3>
       <p class="ig-sub">Clic en una cuenta de la tabla de arriba para ver su detalle por cuenta contable, descripción, tercero y valor</p>
+      <p style="margin:0 0 var(--cds-gap-sm)"><label>Buscar <input type="search" id="cta-det-q" placeholder="Descripción, tercero o cuenta contable" aria-label="Buscar en el detalle" style="font:inherit;min-width:min(340px,100%);padding:2px var(--cds-pad-sm);border:1px solid var(--color-border);border-radius:var(--cds-radius);background:var(--color-panel);color:inherit"></label></p>
       <div id="cta-det-box"></div>
     </section>
   </section>
@@ -758,6 +760,7 @@
   ['#sal-det', '#sal-ord', '#sal-sol'].forEach((id) => $(id).addEventListener('change', () => draw()));
   $('#cta-per').addEventListener('change', () => draw());
   $('#cta-q').addEventListener('input', () => draw());
+  ['#acu-det-q', '#cta-det-q'].forEach((id) => $(id).addEventListener('input', () => draw()));
   $('#cmp-ing-met').addEventListener('change', () => draw());
   const fillSelect = (sel, opts, value) => {
     const sig = opts.map((o) => o[0] + '=' + o[1]).join('|');
@@ -1092,20 +1095,22 @@
     const pickGrp = (r) => dash.setParams({ grupo: grp === r.grupo ? 'Todos' : r.grupo });
     const pcs = dash.data('por_cuenta'), kRows = pcs.status === 'ok' ? pcs.data : [];
     const detSrc = dash.data('detalle'), detRows = detSrc.status === 'ok' ? detSrc.data : [];
-    const detalleCuenta = (cuenta, g = grp, per = 'mes') => {
+    const detalleCuenta = (cuenta, g = grp, per = 'mes', q = '') => {
       const m = new Map();
       for (const d of detRows) {
         if ((per === 'acum' ? Number(d.mes) > mes : Number(d.mes) !== mes) || d.Grupo !== g || d.Cuenta !== cuenta || (resp !== 'Todos' && d.Responsable !== resp) || (clase !== 'Todas' && d.Clase !== clase) || (uni !== 'Todas' && d.Unidad !== uni)) continue;
+        if (q && !(String(d.CuentaContable || '') + ' ' + d.Column1 + ' ' + d.Tercero + ' ' + d.valor).toLowerCase().includes(q)) continue;
         const cc = d.CuentaContable && d.CuentaContable !== cuenta ? d.CuentaContable : '', k = cc + '\u0001' + d.Column1 + '\u0001' + d.Tercero, o = m.get(k) || { cc, desc: d.Column1, tercero: d.Tercero, valor: 0 };
         o.valor += Number(d.valor); m.set(k, o);
       }
       const T = new Map(); for (const o of m.values()) T.set(o.cc, (T.get(o.cc) || 0) + o.valor);
       return [...m.values()].sort((a, b) => Math.abs(T.get(b.cc)) - Math.abs(T.get(a.cc)) || (a.cc < b.cc ? -1 : a.cc > b.cc ? 1 : 0) || Math.abs(b.valor) - Math.abs(a.valor));
     };
-    const detalleRow = (cuenta, ncols, g = grp, per = 'mes') => {
+    const detalleRow = (cuenta, ncols, g = grp, per = 'mes', q = '') => {
       const tr = document.createElement('tr'); tr.className = 'ig-det-row';
       const td = document.createElement('td'); td.colSpan = ncols;
-      const L = detalleCuenta(cuenta, g, per), MAX = 2000, tot = L.reduce((s, x) => s + x.valor, 0);
+      const L = detalleCuenta(cuenta, g, per, q), MAX = 2000, tot = L.reduce((s, x) => s + x.valor, 0);
+      if (!L.length && q) { td.textContent = 'Ninguna línea coincide con «' + q + '».'; td.className = 'ig-det-empty'; tr.append(td); return tr; }
       if (!L.length) { td.textContent = per === 'acum' ? 'Sin movimientos contables en el periodo para esta cuenta.' : 'Sin movimientos contables en este mes para esta cuenta.'; td.className = 'ig-det-empty'; tr.append(td); return tr; }
       const wrap = document.createElement('div'); wrap.className = 'ig-det';
       const tb = document.createElement('table'); tb.className = 'ig-table';
@@ -1153,7 +1158,7 @@
         table(tbl, rows, keys, [['cuenta', (v) => v], ...costCols], sorts[tbl.id], (r) => { window.__selAcu = { g: grp, c: r.cuenta }; draw(); }, (r) => r.cuenta === sel);
         setText($('#acu-det-l'), sel ? '«' + sel + '» · ' + grp : '—');
         const box = $('#acu-det-box'); box.replaceChildren();
-        if (sel) { const t = detalleRow(sel, 1, grp, 'acum').querySelector('td'); box.append(...t.childNodes); }
+        if (sel) { const t = detalleRow(sel, 1, grp, 'acum', ($('#acu-det-q').value || '').trim().toLowerCase()).querySelector('td'); box.append(...t.childNodes); }
         return;
       }
       const per = tbl.id === 'mes-cuentas' ? 'mes' : 'acum', kk = (r) => per + '|' + mes + '|' + grp + '|' + r.cuenta;
@@ -1317,7 +1322,7 @@
       table(tbl, rows, ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'], [['grupo', (v) => v], ['cuenta', (v) => v], ...costCols], sorts['cta-tabla'], (r) => { window.__selCta = { k: kS(r), p: per }; draw(); }, (r) => kS(r) === sel);
       const rs = rows.find((r) => kS(r) === sel), box = $('#cta-det-box'); box.replaceChildren();
       setText($('#cta-det-l'), rs ? '«' + rs.cuenta + '» · ' + rs.grupo : '—');
-      if (rs) { const t = detalleRow(rs.cuenta, 1, rs.grupo, per).querySelector('td'); box.append(...t.childNodes); }
+      if (rs) { const t = detalleRow(rs.cuenta, 1, rs.grupo, per, ($('#cta-det-q').value || '').trim().toLowerCase()).querySelector('td'); box.append(...t.childNodes); }
     }
 
     if (tab === 'saldos') {
