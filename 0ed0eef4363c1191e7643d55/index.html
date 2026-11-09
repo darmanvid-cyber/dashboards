@@ -143,6 +143,13 @@ ol{margin:8px 0 0;padding-left:20px}
   </ol>
 </details>
 
+<div class="card" id="mq" style="margin-bottom:12px">
+  <h2 style="font-size:16px">Consulta de manifiesto</h2>
+  <p class="note">Escribe el número de manifiesto (con o sin ceros a la izquierda; puedes poner varios separados por coma o espacio). Busca en todo el corte, sin importar los filtros de fechas ni de cliente.</p>
+  <div class="btns"><input id="mqIn" type="search" inputmode="numeric" placeholder="Ej. 00151933" autocomplete="off" style="font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:8px;padding:6px 12px;min-width:240px"><button type="button" class="primary" id="mqGo">Buscar</button><button type="button" id="mqClr">Limpiar</button></div>
+  <div id="mqOut" style="margin-top:10px"></div>
+</div>
+
 <div class="tabs"><button id="tbA" class="on">Presupuesto y fletes (ANALISIS)</button><button id="tbB">Validación de tarifas y flota</button></div>
 <div class="filters card">
   <label>Desde <input type="date" id="d1"></label>
@@ -774,6 +781,36 @@ $("reset").onclick=()=>{$("d1").value="";$("d2").value="";CLISEL.clear();render(
 $("theme").onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
   r.dataset.theme=dark?"light":"dark";render()};
 matchMedia("(prefers-color-scheme:dark)").addEventListener("change",()=>render());
+
+/* ---------- consulta de manifiesto ---------- */
+function mqLookup(){
+  const out=$("mqOut"),q=$("mqIn").value.trim();
+  if(!RAW||!RAW.manifs){out.innerHTML='<p class="note">Sin datos cargados.</p>';return}
+  if(!q){out.innerHTML="";return}
+  const nz=x=>String(x).trim().replace(/^0+/,""),ids=[...new Set(q.split(/[\s,;]+/).filter(Boolean).map(nz))];
+  const V=RAW.val||{},mf=RAW.manifs,aj=RAW.ajuste||0;
+  const kv=(rows)=>'<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:6px 0 10px">'+rows.map(([l,v])=>'<div style="border:1px solid var(--grid);border-radius:8px;padding:6px 10px"><div class="sub" style="font-size:11px">'+l+'</div><div style="font-weight:600">'+(v===""||v==null?"—":v)+'</div></div>').join("")+'</div>';
+  const tbl=(h,rows)=>'<div class="scroll" style="max-height:240px"><table><tr>'+h.map((x,i)=>'<th'+(i?' class="n"':'')+'>'+x+'</th>').join("")+'</tr>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join("")+'</tr>').join("")+'</table></div>';
+  const $$=v=>"$"+nf.format(v),sg=v=>(v>0?"+":v<0?"−":"")+"$"+nf.format(Math.abs(v));
+  out.innerHTML=ids.map(id=>{
+    const m=mf.find(r=>nz(r[9])===id),c=V.manifs&&V.manifs.find(r=>nz(r[0])===id),ie=V.ineff&&V.ineff.filter(r=>nz(r[0])===id);
+    const oc=(V.ocup||[]).filter(r=>String(r[11]).split(",").some(x=>nz(x)===id));
+    let h='<div class="card" style="margin-bottom:10px"><h2 style="font-size:15px">Manifiesto '+escH(m?m[9]:id)+'</h2>';
+    if(!m&&!c&&!(ie&&ie.length)&&!oc.length){
+      const sug=[...new Set(mf.map(r=>r[9]).filter(x=>nz(x).endsWith(id)||nz(x).startsWith(id)))].slice(0,8);
+      return h+'<p class="note">No aparece en este corte (puede estar fuera del periodo o anulado: los anulados no se incluyen).'+(sug.length?' ¿Quisiste decir: '+sug.map(escH).join(", ")+'?':'')+'</p></div>'}
+    if(m){const cc=m[7]*(1+aj);
+      h+='<p class="note">Datos del manifiesto</p>'+kv([["Fecha",m[0]],["Estado",escH(m[1])],["Cliente",escH(m[11])],["Placa",escH(m[10])],["Origen",escH(m[2])],["Destino",escH(m[3])],["Dpto. origen",escH(m[4])],["Clase de vehículo",escH(m[5])],["Categoría",escH(m[6])],["Peso / cantidad",nf.format(m[8])+" kg"],["Flete del manifiesto",$$(m[7])],["Flete con fletes contables ("+P(aj)+")",$$(cc)]])}
+    else h+='<p class="note">No está en la lista de manifiestos del corte (solo en la validación).</p>';
+    if(c)h+='<p class="note">Manifiesto compartido · validación de tarifa</p>'+kv([["Ruta",escH(c[2])],["Regional",escH(c[3])],["Pedidos incluidos",c[5]],["Suma tarifa tabla",$$(c[6])],["Costo manifiesto",$$(c[7])],["Dif. vs tarifa",sg(c[8])],["Otros costos",$$(c[9])],["Dif. neta vs tarifa",sg(c[10])],["Estado",escH(c[11])]]);
+    if(ie&&ie.length)h+='<p class="note">Ineficiencia de vehículo</p>'+tbl(["Ruta","Peso real","Peso SICETAC","Vehículo usado","Sugerido","Tarifa real","Tarifa sugerida","Ahorro potencial","Conclusión"],ie.map(r=>[escH(r[2]),nf.format(r[4]),nf.format(r[5]),escH(r[6]),escH(r[7]),$$(r[8]),$$(r[9]),sg(r[10]),escH(r[12])]));
+    oc.forEach(r=>{h+='<p class="note">Viaje · ocupación del vehículo</p>'+kv([["Fecha",r[0]],["Regional",escH(r[1])],["Vehículo",escH(r[2])],["Ocupación",P(r[3])],["Peso usado / capacidad",nf.format(r[6])+" / "+nf.format(r[7])+" kg"],["Piezas",nf.format(r[8])],["Ruta",escH(r[9])],["Clientes",escH(r[10])],["Placas",escH(r[5])],["Manifiestos del viaje",escH(r[11])]]);
+      const ps=String(r[4]).split(",").map(x=>nz(x)).filter(Boolean),pr=(V.pedidos||[]).filter(p=>ps.includes(nz(p[0])));
+      if(pr.length)h+=tbl(["Pedido","Fecha","Ruta","Vehículo","Tarifa tabla","Flete solicitado","Costo manifiestos","Dif. vs tarifa","Estado"],pr.map(p=>[escH(p[0]),p[1],escH(p[3]),escH(p[4]),$$(p[5]),$$(p[6]),$$(p[8]),sg(p[9]),escH(p[10])]))});
+    return h+'</div>'}).join("");
+}
+$("mqGo").onclick=mqLookup;$("mqIn").addEventListener("keydown",e=>{if(e.key==="Enter")mqLookup()});
+$("mqClr").onclick=()=>{$("mqIn").value="";$("mqOut").innerHTML="";$("mqIn").focus()};
 
 (function init(){
   const emb=safe(()=>JSON.parse($("raw").textContent),null);
