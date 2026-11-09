@@ -606,7 +606,7 @@ function render(){
     <li><b>Variación (fav +)</b> = Presupuesto − Ejecución. Positiva = se ha gastado menos de lo presupuestado.</li>
   </ul>
   <div class="flow">
-    ${raw._cli?bx("Cliente",raw._cli)+op("→")+bx("Ingreso real ("+raw._fuente+")",M(T.ing),1):bx("Ingreso real (Ingresos acumulados)",M(T.ing),1)}${op("× "+P(raw.pctPpto)+" =")}${bx("Presupuesto fletes",M(T.ppto),1)}
+    ${raw._cli?bx("Cliente",raw._cli)+op("→")+bx("Ingreso real ("+raw._fuente+")",M(T.ing),1):bx("Ingreso real (Ingresos acumulados)",M(T.ing),1)}${raw._cli?op("× "+P(raw.pctPpto)+" ="):op("·")}${bx(raw._cli?"Presupuesto fletes (ingreso × razón del archivo de presupuesto)":"Presupuesto fletes (archivo de presupuesto)",M(T.ppto),1)}
   </div>
   <div class="flow">
     ${bx("Fletes de manifiestos · comprobante MANUAL FLETES",M(T.fm))}${op("+")}${bx("Demás fletes contables",M(T.fc))}${op("=")}${bx("Ejecución (Costos totales 2026)",M(T.ejec),1)}
@@ -621,7 +621,7 @@ function render(){
   </div>
   <div class="scroll"><table id="tAna"></table></div>
   <div class="bar"><i style="width:${Math.min(100,pct*100)}%"></i></div>
-  <div class="sub">Ejecución al <b>${P(pct)}</b> del presupuesto · equivale al ${T.ing?P(T.ejecR/T.ing):"—"} del ingreso real (tope presupuestado: ${P(raw.pctPpto)}).</div>`;
+  <div class="sub">Ejecución al <b>${P(pct)}</b> del presupuesto · equivale al ${T.ing?P(T.ejecR/T.ing):"—"} del ingreso real (presupuesto: ${M(T.ppto)}).</div>`;
   tbl("tAna",["Grupo","Ppto","Ejec","Var $ (fav +)","% ejec."],[[CLI||"Fletes",T.ppto?M(T.ppto):"—",M(T.ejec),T.ppto?M(varr):"—",T.ppto?P(pct):"—"]]);
 
   /* rentabilidad por cliente (corte completo; ingreso real y ejecución de cada cliente) */
@@ -698,7 +698,7 @@ function render(){
   const top1=ori[0], top2=des[0], dmax=dia.slice().sort((a,b)=>b.v-a.v)[0];
   const sobreT=rr.reduce((s,x)=>s+x.sobre,0);
   const L=[];
-  L.push(`Con la premisa de ingreso real ${M(T.ing)} y presupuesto del ${P(raw.pctPpto)}, la ejecución de ${M(T.ejec)} está al <b>${P(pct)}</b> del presupuesto; variación ${varr>=0?"favorable":"desfavorable (sobre-ejecución)"} de ${M(varr)}.`);
+  L.push(`Con ingreso real ${M(T.ing)} y presupuesto de fletes ${M(T.ppto)} (archivo de presupuesto), la ejecución de ${M(T.ejec)} está al <b>${P(pct)}</b> del presupuesto; variación ${varr>=0?"favorable":"desfavorable (sobre-ejecución)"} de ${M(varr)}.`);
   if(top1) L.push(`<b>${top1.k}</b> concentra ${P(top1.v/F)} de los fletes (${top1.n} manifiestos).`);
   if(sp) L.push(`El <b>${P(sp.n/N)}</b> de los manifiestos son transportadores esporádicos; propios ${pr?P(pr.n/N):"0%"} y fidelizados ${fi?P(fi.n/N):"0%"}. Hay espacio para fidelizar y negociar tarifa.`);
   if(rr.length) L.push(`Los viajes por encima de la mediana de su ruta suman <b>${M(sobreT)}</b> (${P(sobreT/F)} de los fletes); mayor dispersión: ${rr.slice().sort((a,b)=>b.ratio-a.ratio)[0].k} (${rr.slice().sort((a,b)=>b.ratio-a.ratio)[0].ratio.toFixed(2)}× entre mín. y máx.).`);
