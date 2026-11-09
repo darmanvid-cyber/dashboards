@@ -216,6 +216,7 @@
       <button role="tab" data-tab="mensual" aria-selected="false">Mensual</button>
       <button role="tab" data-tab="comparar" aria-selected="false">Comparar meses</button>
       <button role="tab" data-tab="saldos" aria-selected="false">Saldos</button>
+      <button role="tab" data-tab="cuentas" aria-selected="false">Cuentas</button>
     </div>
     <div class="ig-filters" id="filtros">
       <label>Mes <select class="f-mes" data-source="ejec_ppto" aria-label="Mes"></select></label>
@@ -442,6 +443,36 @@
       <p class="ig-sub">Millones · un mes por columna · Δ = último mes elegido frente al primero</p>
       <div class="ig-tablewrap">
         <table class="ig-table" id="cmp-areas" data-source="costos"><thead></thead><tbody></tbody></table>
+      </div>
+    </section>
+  </section>
+
+  <!-- ================= CUENTAS ================= -->
+  <section class="ig-page" id="cuentas" hidden>
+    <div>
+      <h2 class="ig-h">Detalle por cuenta · <span class="ig-filt-l">—</span></h2>
+      <p class="ig-hsub">Todas las cuentas contables con su presupuesto y ejecución · clic en una cuenta para ver descripción, tercero y valor · sigue los filtros de mes, área, clase, unidad y grupo</p>
+    </div>
+    <div class="ig-kpis" id="cta-k">
+      <div class="ig-card ig-kpi"><div class="ig-lbl">Presupuesto</div><div class="ig-num" id="cta-k1">—</div></div>
+      <div class="ig-card ig-kpi"><div class="ig-lbl">Ejecutado</div><div class="ig-num" id="cta-k2">—</div></div>
+      <div class="ig-card ig-kpi"><div class="ig-lbl">Variación</div><div class="ig-num" id="cta-k3">—</div></div>
+      <div class="ig-card ig-kpi"><div class="ig-lbl">Cuentas</div><div class="ig-num" id="cta-k4">—</div></div>
+    </div>
+    <section class="ig-card">
+      <h3>Cuentas contables</h3>
+      <p class="ig-sub">Millones · variación = presupuesto − ejecución (negativa = sobrecosto) · clic en un encabezado para ordenar</p>
+      <div class="ig-cmp-opts">
+        <label>Periodo <select id="cta-per"><option value="acum">Acumulado enero – mes</option><option value="mes">Solo el mes</option></select></label>
+        <label>Buscar <input type="search" id="cta-q" placeholder="Cuenta o grupo" aria-label="Buscar cuenta o grupo" style="font:inherit;padding:2px var(--cds-pad-sm);border:1px solid var(--color-border);border-radius:var(--cds-radius);background:var(--color-panel);color:var(--color-fg)"></label>
+        <button type="button" class="ig-det-btn" id="cta-all">Expandir todas</button>
+        <button type="button" class="ig-det-btn" id="cta-xls">Descargar Excel</button>
+      </div>
+      <div class="ig-tablewrap">
+        <table class="ig-table" id="cta-tabla">
+          <thead><tr><th data-field="grupo"><button data-k="grupo">Grupo</button></th><th data-field="cuenta"><button data-k="cuenta">Cuenta</button></th><th data-field="presupuesto"><button data-k="presupuesto">Ppto</button></th><th data-field="ejecutado"><button data-k="ejecutado">Ejec</button></th><th data-field="var"><button data-k="var">Var. $</button></th><th data-field="var_pct" class="hide-sm"><button data-k="var_pct">Var. %</button></th><th data-field="_det"></th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </section>
   </section>
@@ -708,7 +739,7 @@
   // ---------- Tabs ----------
   let tab = 'acumulado';
   const hash = location.hash.slice(1);
-  if (['acumulado', 'mensual', 'comparar', 'saldos'].includes(hash)) tab = hash;
+  if (['acumulado', 'mensual', 'comparar', 'saldos', 'cuentas'].includes(hash)) tab = hash;
   $$('.ig-tabs button').forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; dash.setLink(tab); draw(); }));
 
   // ---------- Filters ----------
@@ -721,6 +752,8 @@
   let cmp = null;
   $('#cmp-met').addEventListener('change', () => draw());
   ['#sal-det', '#sal-ord', '#sal-sol'].forEach((id) => $(id).addEventListener('change', () => draw()));
+  $('#cta-per').addEventListener('change', () => draw());
+  $('#cta-q').addEventListener('input', () => draw());
   $('#cmp-ing-met').addEventListener('change', () => draw());
   const fillSelect = (sel, opts, value) => {
     const sig = opts.map((o) => o[0] + '=' + o[1]).join('|');
@@ -729,7 +762,7 @@
   };
 
   // ---------- Sorting ----------
-  const sorts = { 'acu-grupos': ['var', 1], 'mes-grupos': ['var', 1], 'con-tabla': ['consumo', -1], 'acu-cuentas': ['var', 1], 'mes-cuentas': ['var', 1] };
+  const sorts = { 'acu-grupos': ['var', 1], 'mes-grupos': ['var', 1], 'con-tabla': ['consumo', -1], 'acu-cuentas': ['var', 1], 'mes-cuentas': ['var', 1], 'cta-tabla': ['var', 1] };
   Object.keys(sorts).forEach((id) => $$('#' + id + ' th button').forEach((b) => b.addEventListener('click', () => {
     const s = sorts[id], k = b.dataset.k;
     sorts[id] = s[0] === k ? [k, -s[1]] : [k, ['grupo', 'cuenta', 'var'].includes(k) ? 1 : -1];
@@ -1055,28 +1088,43 @@
     const pickGrp = (r) => dash.setParams({ grupo: grp === r.grupo ? 'Todos' : r.grupo });
     const pcs = dash.data('por_cuenta'), kRows = pcs.status === 'ok' ? pcs.data : [];
     const detSrc = dash.data('detalle'), detRows = detSrc.status === 'ok' ? detSrc.data : [];
-    const detalleCuenta = (cuenta) => {
+    const detalleCuenta = (cuenta, g = grp, per = 'mes') => {
       const m = new Map();
       for (const d of detRows) {
-        if (Number(d.mes) !== mes || d.Grupo !== grp || d.Cuenta !== cuenta || (resp !== 'Todos' && d.Responsable !== resp) || (clase !== 'Todas' && d.Clase !== clase) || (uni !== 'Todas' && d.Unidad !== uni)) continue;
+        if ((per === 'acum' ? Number(d.mes) > mes : Number(d.mes) !== mes) || d.Grupo !== g || d.Cuenta !== cuenta || (resp !== 'Todos' && d.Responsable !== resp) || (clase !== 'Todas' && d.Clase !== clase) || (uni !== 'Todas' && d.Unidad !== uni)) continue;
         const cc = d.CuentaContable && d.CuentaContable !== cuenta ? d.CuentaContable : '', k = cc + '\u0001' + d.Column1 + '\u0001' + d.Tercero, o = m.get(k) || { cc, desc: d.Column1, tercero: d.Tercero, valor: 0 };
         o.valor += Number(d.valor); m.set(k, o);
       }
       return [...m.values()].sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor));
     };
-    const detalleRow = (cuenta, ncols) => {
+    const detalleRow = (cuenta, ncols, g = grp, per = 'mes') => {
       const tr = document.createElement('tr'); tr.className = 'ig-det-row';
       const td = document.createElement('td'); td.colSpan = ncols;
-      const L = detalleCuenta(cuenta), MAX = 300, tot = L.reduce((s, x) => s + x.valor, 0);
-      if (!L.length) { td.textContent = 'Sin movimientos contables en este mes para esta cuenta.'; td.className = 'ig-det-empty'; tr.append(td); return tr; }
+      const L = detalleCuenta(cuenta, g, per), MAX = 300, tot = L.reduce((s, x) => s + x.valor, 0);
+      if (!L.length) { td.textContent = per === 'acum' ? 'Sin movimientos contables en el periodo para esta cuenta.' : 'Sin movimientos contables en este mes para esta cuenta.'; td.className = 'ig-det-empty'; tr.append(td); return tr; }
       const wrap = document.createElement('div'); wrap.className = 'ig-det';
       const tb = document.createElement('table'); tb.className = 'ig-table';
       const showCC = L.some((x) => x.cc);
       tb.innerHTML = '<thead><tr>' + (showCC ? '<th>Cuenta contable</th>' : '') + '<th>Descripción (Column1)</th><th>Tercero</th><th>Valor</th></tr></thead>';
       const body = document.createElement('tbody');
       const add = (a, b, c, cls, k) => { const r = document.createElement('tr'); if (cls) r.className = cls; (showCC ? [k || '', a, b, c] : [a, b, c]).forEach((v, i, arr) => { const x = document.createElement('td'); x.textContent = v; if (i < arr.length - 1) x.style.textAlign = 'left'; if (i < arr.length - 1) x.style.whiteSpace = 'normal'; r.append(x); }); body.append(r); };
-      L.slice(0, MAX).forEach((x) => add(x.desc || '(sin descripción)', x.tercero || '(sin tercero)', '$' + nf0.format(x.valor), '', x.cc));
-      if (L.length > MAX) add('… y ' + (L.length - MAX) + ' líneas más', '', '$' + nf0.format(L.slice(MAX).reduce((s, x) => s + x.valor, 0)));
+      if (showCC) {
+        const G = new Map();
+        for (const x of L) { const k = x.cc || cuenta; const o = G.get(k) || { k, v: 0, L: [] }; o.v += x.valor; o.L.push(x); G.set(k, o); }
+        [...G.values()].sort((p, q) => Math.abs(q.v) - Math.abs(p.v)).forEach((g) => {
+          const h = document.createElement('tr'); h.className = 'ig-cc-head'; h.style.cursor = 'pointer'; h.style.fontWeight = '600';
+          [ '▸ ' + g.k, g.L.length + (g.L.length === 1 ? ' línea' : ' líneas'), '', '$' + nf0.format(g.v)].forEach((v, i) => { const x = document.createElement('td'); x.textContent = v; if (i < 3) x.style.textAlign = 'left'; h.append(x); });
+          const kids = [];
+          g.L.slice(0, MAX).forEach((x) => { add(x.desc || '(sin descripción)', x.tercero || '(sin tercero)', '$' + nf0.format(x.valor), '', ''); const r = body.lastChild; r.style.display = 'none'; kids.push(r); });
+          if (g.L.length > MAX) { add('… y ' + (g.L.length - MAX) + ' líneas más', '', '$' + nf0.format(g.L.slice(MAX).reduce((t, x) => t + x.valor, 0)), '', ''); const r = body.lastChild; r.style.display = 'none'; kids.push(r); }
+          body.insertBefore(h, kids[0] || null);
+          let open = false;
+          h.addEventListener('click', () => { open = !open; kids.forEach((r) => { r.style.display = open ? '' : 'none'; }); h.firstChild.textContent = (open ? '▾ ' : '▸ ') + g.k; });
+        });
+      } else {
+        L.slice(0, MAX).forEach((x) => add(x.desc || '(sin descripción)', x.tercero || '(sin tercero)', '$' + nf0.format(x.valor), '', x.cc));
+        if (L.length > MAX) add('… y ' + (L.length - MAX) + ' líneas más', '', '$' + nf0.format(L.slice(MAX).reduce((s, x) => s + x.valor, 0)));
+      }
       add('Total · ' + L.length + (L.length === 1 ? ' línea' : ' líneas'), '', '$' + nf0.format(tot), 'hl');
       tb.append(body); wrap.append(tb); td.append(wrap); tr.append(td); return tr;
     };
@@ -1257,6 +1305,23 @@
       }
       pivot($('#cmp-grupos'), 'grupo');
       pivot($('#cmp-areas'), 'area');
+    }
+
+    if (tab === 'cuentas') {
+      const per = $('#cta-per').value, q = $('#cta-q').value.trim().toLowerCase();
+      const rows = kRows.filter((r) => r.periodo === per && r.mes === mes && r.responsable === resp && r.clase === clase && r.unidad === uni && (grp === 'Todos' || r.grupo === grp) && (r.ejecutado || r.presupuesto) && (!q || String(r.cuenta).toLowerCase().includes(q) || String(r.grupo).toLowerCase().includes(q)));
+      const tot = rows.reduce((a, r) => ({ p: a.p + (r.presupuesto || 0), e: a.e + (r.ejecutado || 0) }), { p: 0, e: 0 });
+      setText($('#cta-k1'), M(tot.p)); setText($('#cta-k2'), M(tot.e)); setText($('#cta-k3'), Ms(tot.p - tot.e), tone(tot.p - tot.e)); setText($('#cta-k4'), String(rows.length));
+      const key = (r) => 'c|' + per + '|' + mes + '|' + r.grupo + '|' + r.cuenta, ok = (r) => openCta.has(key(r));
+      const tbl = $('#cta-tabla');
+      const btn = (v, r) => { const b = document.createElement('span'); b.className = 'ig-det-btn'; b.textContent = ok(r) ? 'Ocultar detalle ▾' : 'Ver detalle ▸'; return b; };
+      const all = $('#cta-all'), allOpen = rows.length && rows.every(ok);
+      all.textContent = allOpen ? 'Contraer todas' : 'Expandir todas';
+      all.onclick = () => { rows.forEach((r) => { allOpen ? openCta.delete(key(r)) : openCta.add(key(r)); }); draw(); };
+      $('#cta-xls').onclick = () => exportCuentas(rows.slice().sort((a, b) => String(a.grupo).localeCompare(String(b.grupo)) || String(a.cuenta).localeCompare(String(b.cuenta))), per);
+      table(tbl, rows, ['periodo', 'mes', 'responsable', 'clase', 'unidad', 'grupo', 'cuenta'], [['grupo', (v) => v], ['cuenta', (v, r) => (ok(r) ? '▾ ' : '▸ ') + v], ...costCols, ['_det', btn]], sorts['cta-tabla'], (r) => { ok(r) ? openCta.delete(key(r)) : openCta.add(key(r)); draw(); });
+      const trs = [...tbl.querySelectorAll('tbody > tr')], ncols = tbl.querySelectorAll('thead th').length;
+      for (let i = rows.length - 1; i >= 0; i--) if (ok(rows[i]) && trs[i]) trs[i].after(detalleRow(rows[i].cuenta, ncols, rows[i].grupo, per));
     }
 
     if (tab === 'saldos') {
