@@ -523,8 +523,8 @@ function render(){
     <div style="flex:1 1 220px">${T.ppto?ejecDonut(pct,T.ing,T.ejec):""}</div>
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:6px 0">
-    <div style="flex:0 1 300px">${gauge(T.ing>0?(T.ing-T.ejec)/T.ing:null,1-raw.pctPpto)}</div>
-    <div class="sub" style="flex:1 1 240px"><b>Viajes = manifiestos del cliente en el corte. Rentabilidad = (Ingreso esperado − Ejecución) ÷ Ingreso esperado.</b> Margen que deja el ingreso después de los fletes${raw._cli?" de "+raw._cli:""}. La marca es el margen que implica el presupuesto (1 − ${P(raw.pctPpto)} = ${P(1-raw.pctPpto)}): por encima de la marca la ejecución va mejor que lo presupuestado.${T.ing>0?" Ingreso "+M(T.ing)+" − ejecución "+M(T.ejec)+" = <b>"+M(T.ing-T.ejec)+"</b>.":" Este cliente no tiene ingreso en la hoja supuestos."}</div>
+    <div style="flex:0 1 300px">${gauge(T.ing>0?(T.ing-T.ejec)/T.ing:null,0.36)}</div>
+    <div class="sub" style="flex:1 1 240px"><b>Viajes = manifiestos del cliente en el corte. Rentabilidad = (Ingreso esperado − Ejecución) ÷ Ingreso esperado.</b> Margen que deja el ingreso después de los fletes${raw._cli?" de "+raw._cli:""}. La marca es la meta fija de rentabilidad (36 %): por encima de la marca el margen es mejor que la meta.${T.ing>0?" Ingreso "+M(T.ing)+" − ejecución "+M(T.ejec)+" = <b>"+M(T.ing-T.ejec)+"</b>.":" Este cliente no tiene ingreso en la hoja supuestos."}</div>
   </div>
   <div class="scroll"><table id="tAna"></table></div>
   <div class="bar"><i style="width:${Math.min(100,pct*100)}%"></i></div>
@@ -532,10 +532,10 @@ function render(){
   tbl("tAna",["Grupo","Ppto","Ejec","Var $ (fav +)","% ejec."],[[CLI||"Fletes",T.ppto?M(T.ppto):"—",M(T.ejec),T.ppto?M(varr):"—",T.ppto?P(pct):"—"]]);
 
   /* rentabilidad por cliente (corte completo; ingreso esperado y ejecución de cada cliente) */
-  {const meta=1-PCT_CLI,rr=cls.map(c=>{const t_=totals(clienteView(RAW,[c],TG));return {c,ing:t_.ing,ej:t_.ejec,n:t_.n,rent:t_.ing>0?(t_.ing-t_.ejec)/t_.ing:null}}).sort((a,b)=>(b.ing>0)-(a.ing>0)||b.ing-a.ing||b.ej-a.ej);
+  {const meta=0.36,rr=cls.map(c=>{const t_=totals(clienteView(RAW,[c],TG));return {c,ing:t_.ing,ej:t_.ejec,n:t_.n,rent:t_.ing>0?(t_.ing-t_.ejec)/t_.ing:null}}).sort((a,b)=>(b.ing>0)-(a.ing>0)||b.ing-a.ing||b.ej-a.ej);
    const cel=x=>x.rent==null?"—":`<span class="rb"><i style="width:${Math.max(0,Math.min(100,x.rent*100))}%;background:${x.rent>=meta?"var(--good)":"var(--bad)"}"></i></span><b style="color:${x.rent>=meta?"var(--good)":"var(--bad)"}">${P(x.rent)}</b>`;
    const tg={c:"Total (todos los clientes)",ing:TG.ing,ej:TG.ejec,rent:TG.ing>0?(TG.ing-TG.ejec)/TG.ing:null};
-   $("rentNote").innerHTML="Rentabilidad = (Ingreso esperado − Ejecución) ÷ Ingreso esperado de cada cliente, sobre el corte completo (no depende del filtro de fechas). Verde = alcanza o supera la meta de <b>"+P(meta)+"</b> (1 − "+P(PCT_CLI)+" del presupuesto); rojo = por debajo. Sin ingreso en las hojas SUPUESTOS/REMESAS el % no se puede calcular (—). Haz clic en un cliente para filtrar el dash por él.";
+   $("rentNote").innerHTML="Rentabilidad = (Ingreso esperado − Ejecución) ÷ Ingreso esperado de cada cliente, sobre el corte completo (no depende del filtro de fechas). Verde = alcanza o supera la meta fija de <b>"+P(meta)+"</b>; rojo = por debajo. Sin ingreso en las hojas SUPUESTOS/REMESAS el % no se puede calcular (—). Haz clic en un cliente para filtrar el dash por él.";
    $("tRent").innerHTML="<thead><tr>"+["Cliente","Viajes","Flete prom. por viaje","Ingreso esperado","Ejecución (fletes)","Rentabilidad $","% Rentabilidad"].map(h=>`<th>${h}</th>`).join("")+"</tr></thead><tbody>"+
      rr.map(x=>`<tr data-c="${escH(x.c)}" class="${CLISEL.has(x.c)?"sel":""}" style="cursor:pointer"><td>${escH(x.c)}</td><td><b>${x.n}</b></td><td>${x.n?M(x.ej/x.n):"—"}</td><td>${x.ing>0?M(x.ing):"—"}</td><td>${M(x.ej)}</td><td>${x.rent==null?"—":M(x.ing-x.ej)}</td><td style="white-space:nowrap">${cel(x)}</td></tr>`).join("")+
      `<tr style="font-weight:700"><td>${tg.c}</td><td>${RAW.manifs.length}</td><td>${RAW.manifs.length?M(tg.ej/RAW.manifs.length):"—"}</td><td>${M(tg.ing)}</td><td>${M(tg.ej)}</td><td>${tg.rent==null?"—":M(tg.ing-tg.ej)}</td><td style="white-space:nowrap">${cel(tg)}</td></tr></tbody>`;}
