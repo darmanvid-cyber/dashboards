@@ -59,7 +59,7 @@
 .export-note { display: none; }
 </style>
 </head><body>
-<div class="export-note">Copia guardada del dashboard · costos y gastos al corte de octubre 2026 (ingresos, margen y equilibrio hasta septiembre) · exportado el 06/11/2026. No se actualiza sola: para cifras nuevas, abre la versión en línea.</div>
+<div class="export-note">Copia guardada del dashboard · ingresos, costos y gastos al corte de octubre 2026 · exportado el 06/11/2026. No se actualiza sola: para cifras nuevas, abre la versión en línea.</div>
 <div id="dash-root">
 <style>
 #dash-root .ig {
@@ -384,7 +384,7 @@
     <div class="ig-grid ig-pg">
       <section class="ig-card" id="mes-util-card">
         <h3>Utilidad mensual</h3>
-        <p class="ig-sub">Millones · <span class="ig-uni-l">—</span> · enero – septiembre 2026</p>
+        <p class="ig-sub">Millones · <span class="ig-uni-l">—</span> · enero – octubre 2026</p>
         <div class="ig-legend"><span class="ig-ppto-leg"><i class="ln" style="background:var(--ig-grey)"></i>Presupuesto</span><span><i class="ln" style="background:var(--ig-mid)"></i>Ejecución</span></div>
         <div class="ig-chart dash-skeleton" id="mes-util" data-source="pyg"></div>
       </section>
@@ -612,11 +612,11 @@
       const base = new Map();
       const cell = (u, k) => { const key = u + '|' + k; if (!base.has(key)) base.set(key, { ie: 0, inop: 0, ip: 0, c: Object.fromEntries(CL.map((x) => [x, [0, 0]])) }); return base.get(key); };
       const units = new Set(['Todas']);
-      for (const r of ingresos) { const k = Number(r.mes); if (k > 9) continue; units.add(r.Unidad); const f = r.tipo === 'No operacional' ? 'inop' : 'ie'; for (const u of ['Todas', r.Unidad]) cell(u, k)[f] += Number(r.ingreso); }
-      for (const r of ppto_ingresos) { const k = Number(r.mes); if (k > 9) continue; units.add(r.Unidad); for (const u of ['Todas', r.Unidad]) cell(u, k).ip += Number(r.presupuesto_original); }
-      for (const r of ejec_ppto) { const k = Number(r.mes); if (k > 9 || !CL.includes(r.Clase)) continue; units.add(r.Unidad); for (const u of ['Todas', r.Unidad]) { const c = cell(u, k).c[r.Clase]; c[0] += Number(r.ejecutado); c[1] += Number(r.presupuesto); } }
+      for (const r of ingresos) { const k = Number(r.mes); if (k > 10) continue; units.add(r.Unidad); const f = r.tipo === 'No operacional' ? 'inop' : 'ie'; for (const u of ['Todas', r.Unidad]) cell(u, k)[f] += Number(r.ingreso); }
+      for (const r of ppto_ingresos) { const k = Number(r.mes); if (k > 10) continue; units.add(r.Unidad); for (const u of ['Todas', r.Unidad]) cell(u, k).ip += Number(r.presupuesto_original); }
+      for (const r of ejec_ppto) { const k = Number(r.mes); if (k > 10 || !CL.includes(r.Clase)) continue; units.add(r.Unidad); for (const u of ['Todas', r.Unidad]) { const c = cell(u, k).c[r.Clase]; c[0] += Number(r.ejecutado); c[1] += Number(r.presupuesto); } }
       const out = [];
-      for (const unidad of units) for (const periodo of ['mes', 'acum']) for (let mes = 1; mes <= 9; mes++) {
+      for (const unidad of units) for (const periodo of ['mes', 'acum']) for (let mes = 1; mes <= 10; mes++) {
         let ie = 0, ip = 0, inop = 0; const c = Object.fromEntries(CL.map((x) => [x, [0, 0]]));
         for (let k = periodo === 'mes' ? mes : 1; k <= mes; k++) { const b = cell(unidad, k); ie += b.ie; ip += b.ip; inop += b.inop; for (const x of CL) { c[x][0] += b.c[x][0]; c[x][1] += b.c[x][1]; } }
         const hasP = true;
@@ -651,12 +651,12 @@
     inputs: ['costos', 'ingresos', 'ppto_ingresos'],
     fn: (costos, ingresos, ppto_ingresos) => {
       const ing = new Map(), ipp = new Map();
-      for (const r of ppto_ingresos) { const k = Number(r.mes); if (k > 9) continue;
-        for (const [periodo, from, to] of [['mes', k, k], ['acum', k, 9]]) for (let m = from; m <= to; m++) {
+      for (const r of ppto_ingresos) { const k = Number(r.mes); if (k > 10) continue;
+        for (const [periodo, from, to] of [['mes', k, k], ['acum', k, 10]]) for (let m = from; m <= to; m++) {
           const key = periodo + '|' + m + '|' + r.Unidad; ipp.set(key, (ipp.get(key) || 0) + Number(r.presupuesto_original));
         } }
-      for (const r of ingresos) { const k = Number(r.mes); if (k > 9 || r.tipo === 'No operacional') continue;
-        for (const [periodo, from] of [['mes', k], ['acum', k]]) for (let m = from; m <= (periodo === 'mes' ? k : 9); m++) {
+      for (const r of ingresos) { const k = Number(r.mes); if (k > 10 || r.tipo === 'No operacional') continue;
+        for (const [periodo, from] of [['mes', k], ['acum', k]]) for (let m = from; m <= (periodo === 'mes' ? k : 10); m++) {
           const key = periodo + '|' + m + '|' + r.Unidad; ing.set(key, (ing.get(key) || 0) + Number(r.ingreso));
         } }
       const tot = new Map();
@@ -685,12 +685,12 @@
       const VAR = { 'Fletes': 1, 'Serv. Complem Transp': 1, 'Servicios de Mensaj': 1, 'Impuestos': 1, 'Gastos de Viaje': 0.3 };
       const b = new Map(), get = (u, k) => { const key = u + '|' + k; if (!b.has(key)) b.set(key, { ie: 0, ip: 0, ve: 0, fe: 0, vp: 0, fp: 0 }); return b.get(key); };
       const units = new Set(['Todas']);
-      for (const r of ingresos) { const k = Number(r.mes); if (k > 9 || r.tipo === 'No operacional') continue; units.add(r.Unidad); for (const u of ['Todas', r.Unidad]) get(u, k).ie += Number(r.ingreso); }
-      for (const r of ppto_ingresos) { const k = Number(r.mes); if (k > 9) continue; units.add(r.Unidad); for (const u of ['Todas', r.Unidad]) get(u, k).ip += Number(r.presupuesto_original); }
-      for (const r of ejec_ppto) { const k = Number(r.mes); if (k > 9) continue; units.add(r.Unidad); const v = VAR[r.Grupo] || 0;
+      for (const r of ingresos) { const k = Number(r.mes); if (k > 10 || r.tipo === 'No operacional') continue; units.add(r.Unidad); for (const u of ['Todas', r.Unidad]) get(u, k).ie += Number(r.ingreso); }
+      for (const r of ppto_ingresos) { const k = Number(r.mes); if (k > 10) continue; units.add(r.Unidad); for (const u of ['Todas', r.Unidad]) get(u, k).ip += Number(r.presupuesto_original); }
+      for (const r of ejec_ppto) { const k = Number(r.mes); if (k > 10) continue; units.add(r.Unidad); const v = VAR[r.Grupo] || 0;
         for (const u of ['Todas', r.Unidad]) { const c = get(u, k); c.ve += v * Number(r.ejecutado); c.fe += (1 - v) * Number(r.ejecutado); c.vp += v * Number(r.presupuesto); c.fp += (1 - v) * Number(r.presupuesto); } }
       const out = [];
-      for (const unidad of units) for (const periodo of ['mes', 'acum']) for (let mes = 1; mes <= 9; mes++) {
+      for (const unidad of units) for (const periodo of ['mes', 'acum']) for (let mes = 1; mes <= 10; mes++) {
         const a = { ie: 0, ip: 0, ve: 0, fe: 0, vp: 0, fp: 0 };
         for (let k = periodo === 'mes' ? mes : 1; k <= mes; k++) { const c = get(unidad, k); for (const f in a) a[f] += c[f]; }
         const pv = a.ie ? a.ve / a.ie : null, pvp = a.ip ? a.vp / a.ip : null;
