@@ -74,13 +74,30 @@ header{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}header>div{fl
 .btn-det{border:1px solid var(--g6);background:#fff;color:var(--g9);border-radius:8px;padding:4px 10px;font:700 12px Arial;cursor:pointer}
 .btn-det:hover{background:var(--g6);color:#fff}
 body.mopen{overflow:hidden}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#141614;--card:#1e211e;--ink:#ececec;--mut:#a8adb3;--line:#333833;--g9:#9bd67a;--g1:#26331f;--or:#f08a5d}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#141614;--card:#1e211e;--ink:#ececec;--mut:#a8adb3;--line:#333833;--g9:#9bd67a;--g1:#26331f;--or:#f08a5d}}
+:root[data-theme="dark"] header,:root[data-theme="dark"] .kpi.hero,:root[data-theme="dark"] .mb.on{background:#1B4D2E;border-color:#1B4D2E}
+:root[data-theme="dark"] .kpi.hero .v,:root[data-theme="dark"] .mb.on{color:#fff}
+:root[data-theme="dark"] nav,:root[data-theme="dark"] .months,:root[data-theme="dark"] .mb,:root[data-theme="dark"] .tabs,:root[data-theme="dark"] .cmpbar select,:root[data-theme="dark"] .mbox,:root[data-theme="dark"] .mhead,:root[data-theme="dark"] .btn-det{background:var(--card);color:var(--ink)}
+:root[data-theme="dark"] .mb.on{background:#1B4D2E}
+:root[data-theme="dark"] .tag.o{background:#4a2a17;color:#f6b48e}
+:root[data-theme="dark"] .note{background:#3a3217;border-color:#6b5a1f;color:#ecd48a}
+:root[data-theme="dark"] .neg{color:#6fd08c}:root[data-theme="dark"] .pos{color:#f08a7d}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) header,:root:not([data-theme="light"]) .kpi.hero,:root:not([data-theme="light"]) .mb.on{background:#1B4D2E;border-color:#1B4D2E}
+:root:not([data-theme="light"]) .kpi.hero .v,:root:not([data-theme="light"]) .mb.on{color:#fff}
+:root:not([data-theme="light"]) nav,:root:not([data-theme="light"]) .months,:root:not([data-theme="light"]) .mb,:root:not([data-theme="light"]) .tabs,:root:not([data-theme="light"]) .cmpbar select,:root:not([data-theme="light"]) .mbox,:root:not([data-theme="light"]) .mhead,:root:not([data-theme="light"]) .btn-det{background:var(--card);color:var(--ink)}
+:root:not([data-theme="light"]) .mb.on{background:#1B4D2E}
+:root:not([data-theme="light"]) .tag.o{background:#4a2a17;color:#f6b48e}
+:root:not([data-theme="light"]) .note{background:#3a3217;border-color:#6b5a1f;color:#ecd48a}
+:root:not([data-theme="light"]) .neg{color:#6fd08c}:root:not([data-theme="light"]) .pos{color:#f08a7d}
+}
 </style>
 </head>
 <body>
 <header>
 <div><h1>Validación de Tarifas de Transporte y Eficiencia de Flota</h1>
 <p id="hsub">Análisis de manifiestos 2026</p></div>
-<button type="button" class="share" id="btn-compartir" aria-label="Compartir dashboard"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg><span id="btn-compartir-txt">Compartir</span></button>
+<button type="button" class="share" id="btn-tema" aria-label="Cambiar tema claro u oscuro"><svg id="btn-tema-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg><span id="btn-tema-txt">Tema</span></button>
 </header>
 <div class="tabs"><button class="on" data-v="val">Validación de tarifas y flota</button><button data-v="viaj">Viajes por ruta y origen</button><button data-v="err">Errores de vehículo por placa</button><button data-v="man">Clase de vehículo en manifiestos</button></div>
 <div id="v-val">
@@ -353,7 +370,7 @@ Chart.defaults.font.family='Arial,Helvetica,sans-serif';Chart.defaults.color='#5
 const $=id=>document.getElementById(id);
 const CH={};
 const mk=(id,cfg)=>{if(CH[id])CH[id].destroy();cfg.options=Object.assign({responsive:true,maintainAspectRatio:false},cfg.options||{});CH[id]=new Chart($(id),cfg)};
-const lin=(fmt)=>({y:{beginAtZero:true,grid:{color:'#eee'},ticks:{callback:fmt}},x:{grid:{display:false}}});
+const lin=(fmt)=>({y:{beginAtZero:true,grid:{color:'rgba(128,128,128,.25)'},ticks:{callback:fmt}},x:{grid:{display:false}}});
 const hbar=(id,labels,vals,color)=>mk(id,{type:'bar',data:{labels,datasets:[{data:vals.map(M),backgroundColor:color}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.raw.toFixed(2)+'M'}}},scales:{x:{grid:{display:false},ticks:{callback:v=>'$'+v+'M'}},y:{grid:{display:false}}}}});
 const row=(a,cls)=>'<tr>'+a.map((x,i)=>`<td class="${(cls&&cls[i])||''}">${x}</td>`).join('')+'</tr>';
 const head=(a,n)=>'<tr>'+a.map((x,i)=>`<th class="${n&&n[i]?'n':''}">${x}</th>`).join('')+'</tr>';
@@ -542,7 +559,7 @@ function renderCmp(){
   const lab=ks.map(k=>MES[+k]),vk=ks.filter(k=>DATA.months[k]),vl=vk.map(k=>MES[+k]);
   mk('k-co',{type:'bar',data:{labels:lab,datasets:[{data:ks.map(k=>M(DATA.cost[k].v)),backgroundColor:G9}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>'$'+x.raw.toLocaleString('es-CO',{maximumFractionDigits:1})+'M'}}},scales:lin(v=>'$'+v+'M')}});
   const st=(n,f,c)=>({label:n,data:vk.map(k=>M(f(DATA.months[k]))),backgroundColor:c});
-  mk('k-op',{type:'bar',data:{labels:vl,datasets:[st('Sobretarifa por pedido',m=>m.sobre_total,G6),st('Manifiestos compartidos',m=>m.vm_sobre,GR),st('Ineficiencia vehicular',m=>m.veh.ahorro,G9)]},options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:x=>x.dataset.label+': $'+x.raw.toFixed(2)+'M'}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#eee'},ticks:{callback:v=>'$'+v+'M'}}}}});
+  mk('k-op',{type:'bar',data:{labels:vl,datasets:[st('Sobretarifa por pedido',m=>m.sobre_total,G6),st('Manifiestos compartidos',m=>m.vm_sobre,GR),st('Ineficiencia vehicular',m=>m.veh.ahorro,G9)]},options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:x=>x.dataset.label+': $'+x.raw.toFixed(2)+'M'}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(128,128,128,.25)'},ticks:{callback:v=>'$'+v+'M'}}}}});
   const regs=[...new Set(vk.flatMap(k=>Object.keys(DATA.months[k].sobre_reg)))];
   const pal=[G6,OR,G9,GR,G3,'#8c6bb1'];
   mk('k-rg',{type:'bar',data:{labels:regs,datasets:vk.map((k,i)=>({label:MES[+k],data:regs.map(r=>M(DATA.months[k].sobre_reg[r]||0)),backgroundColor:pal[i%pal.length]}))},options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:x=>x.dataset.label+': $'+x.raw.toFixed(2)+'M'}}},scales:lin(v=>'$'+v+'M')}});
@@ -593,7 +610,7 @@ function renderVC(){
   const n=$('vc-note');n.hidden=!warn.length;n.textContent=[...new Set(warn)].join(' ');
   $('vc-k').innerHTML=kpi('Rutas que aumentaron',rows.length,'de '+all.filter(r=>r.a||r.b).length+' rutas con viajes en alguno de los dos periodos')+kpi('Viajes adicionales','+'+fm(tb-ta),fm(ta)+' en '+la+' → '+fm(tb)+' en '+lb+' ('+sp(tb,ta)+')','')+kpi('Mayor aumento',rows.length?rows[0].c+' · '+rows[0].o:'—',rows.length?sg(rows[0].b-rows[0].a)+' viajes ('+fm(rows[0].a)+' → '+fm(rows[0].b)+')':'Ninguna ruta aumentó');
   const d=rows.slice(0,15).reverse();
-  mk('c-vcv',{type:'bar',data:{labels:d.map(r=>r.c+' · '+r.o),datasets:[{data:d.map(r=>r.b-r.a),backgroundColor:G6}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>sg(x.raw)+' viajes ('+fm(d[x.dataIndex].a)+' → '+fm(d[x.dataIndex].b)+')'}}},scales:{x:{grid:{color:'#eee'},ticks:{precision:0}},y:{grid:{display:false}}}}});
+  mk('c-vcv',{type:'bar',data:{labels:d.map(r=>r.c+' · '+r.o),datasets:[{data:d.map(r=>r.b-r.a),backgroundColor:G6}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>sg(x.raw)+' viajes ('+fm(d[x.dataIndex].a)+' → '+fm(d[x.dataIndex].b)+')'}}},scales:{x:{grid:{color:'rgba(128,128,128,.25)'},ticks:{precision:0}},y:{grid:{display:false}}}}});
   $('vc-cnt').textContent='· solo rutas con más viajes en B que en A';
   $('t-vc').innerHTML=head(['Ruta · Origen',la,lb,'Aumento','Aumento %'],[0,1,1,1,1])+(rows.length?rows.map(r=>row([r.c+' · '+r.o,fm(r.a),fm(r.b),'+'+(r.b-r.a),r.a?sp(r.b,r.a):'n. a.'],['','n','n','n pos','n'])).join('')+row(['<b>Total '+rows.length+' rutas</b>','<b>'+fm(ta)+'</b>','<b>'+fm(tb)+'</b>','<b>+'+(tb-ta)+'</b>','<b>'+sp(tb,ta)+'</b>'],['','n','n','n','n']):'<tr><td colspan="5">Ninguna ruta aumentó viajes en esta comparación.</td></tr>');
 }
@@ -613,7 +630,7 @@ function buildViajes(){
   $('t-vg').innerHTML=head(['Grupo','Rutas','Viajes 2025','Viajes 2026','Variación','Var. %'],[0,1,1,1,1,1])+VJ.grupos.map(g=>row([g[0],g[1],fm(g[2]),fm(g[3]),sg(g[3]-g[2]),sp(g[3],g[2])],['','n','n','n','n '+(g[3]>g[2]?'pos':'neg'),'n'])).join('');
   const R=VJ.rutas,add=R.slice().reverse().map(r=>r[2]-r[1]);
   mk('c-vr',{type:'bar',data:{labels:R.slice().reverse().map(r=>r[0]),datasets:[{data:add,backgroundColor:R.slice().reverse().map((r,i)=>i===R.length-1?OR:G6)}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>'+'+x.raw+' viajes'}}},scales:{x:{grid:{display:false},ticks:{precision:0}},y:{grid:{display:false}}}}});
-  mk('c-vr2',{type:'bar',data:{labels:R.map(r=>r[0]),datasets:[{label:'2025',data:R.map(r=>r[1]),backgroundColor:GR},{label:'2026',data:R.map(r=>r[2]),backgroundColor:G9}]},options:{indexAxis:'y',scales:{x:{grid:{color:'#eee'}},y:{grid:{display:false}}}}});
+  mk('c-vr2',{type:'bar',data:{labels:R.map(r=>r[0]),datasets:[{label:'2025',data:R.map(r=>r[1]),backgroundColor:GR},{label:'2026',data:R.map(r=>r[2]),backgroundColor:G9}]},options:{indexAxis:'y',scales:{x:{grid:{color:'rgba(128,128,128,.25)'}},y:{grid:{display:false}}}}});
   const t25=R.reduce((a,r)=>a+r[1],0),t26=R.reduce((a,r)=>a+r[2],0);
   $('t-vr').innerHTML=head(['Ruta · Origen','Viajes 2025','Viajes 2026','Aumento','Aumento %'],[0,1,1,1,1])+R.map(r=>row([r[0],r[1],r[2],'+'+(r[2]-r[1]),sp(r[2],r[1])],['','n','n','n pos','n'])).join('')+row(['<b>Total 9 rutas</b>','<b>'+t25+'</b>','<b>'+t26+'</b>','<b>+'+(t26-t25)+'</b>','<b>'+sp(t26,t25)+'</b>'],['','n','n','n','n']);
   mk('c-vm',{type:'bar',data:{labels:MS.slice(1),datasets:[{data:VJ.mes,backgroundColor:VJ.mes.map(v=>v===Math.max(...VJ.mes)?OR:G6)}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>'+'+x.raw+' viajes acumulados'}}},scales:lin(v=>v)}});
@@ -629,7 +646,7 @@ function buildErr(){
   if(erDone)return;erDone=true;
   $('er-k').innerHTML=kpi('Placas con más de un tipo',ERR.plm,'de '+ERR.pl+' placas ('+pct(ERR.plm,ERR.pl)+')','warn')+kpi('Cambios de tipo entre pedidos',ERR.cam.toLocaleString('es-CO'),'de '+ERR.ped.toLocaleString('es-CO')+' pedidos ('+pct(ERR.cam,ERR.ped)+')')+kpi('Mismo día, distinto tipo',ERR.sd,ERR.sdp+' placas · '+mo(ERR.sdf)+' de flete','warn')+kpi('Tipo distinto de la tarifa SICETAC',ERR.ts,pct(ERR.ts,ERR.ped)+' de los pedidos (revisar)');
   const t=ERR.trans.slice().reverse();
-  mk('c-ert',{type:'bar',data:{labels:t.map(x=>x[0]+' → '+x[1]),datasets:[{data:t.map(x=>x[2]),backgroundColor:G6}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>x.raw+' cambios'}}},scales:{x:{grid:{color:'#eee'}},y:{grid:{display:false}}}}});
+  mk('c-ert',{type:'bar',data:{labels:t.map(x=>x[0]+' → '+x[1]),datasets:[{data:t.map(x=>x[2]),backgroundColor:G6}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>x.raw+' cambios'}}},scales:{x:{grid:{color:'rgba(128,128,128,.25)'}},y:{grid:{display:false}}}}});
   const ms=Object.keys(ERR.mes);
   mk('c-erm',{type:'bar',data:{labels:ms.map(k=>MS[+k]),datasets:[{data:ms.map(k=>ERR.mes[k]),backgroundColor:OR}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>x.raw+' pedidos'}}},scales:lin(v=>v)}});
   $('er-q').oninput=renderErp;renderErp();
@@ -647,7 +664,7 @@ function buildMan(){
   $('ma-sub').textContent='Fuente: hoja Manifiestos - Todos, '+MAN.desde+' a '+MAN.hasta+'. Sin manifiestos anulados ni registros sin placa.';
   $('ma-k').innerHTML=kpi('Manifiestos únicos',MAN.man.toLocaleString('es-CO'),MAN.pl+' placas')+kpi('Placas con más de una clase',MAN.plm,'de '+MAN.pl+' placas ('+pct(MAN.plm,MAN.pl)+')','warn')+kpi('Mismo día, distinta clase','0','ninguna placa');
   const pal=[G9,G6,OR,GR,G3,'#2E7D6B','#8A6D3B','#7A7A7A','#C9A227'];
-  mk('c-mam',{type:'bar',data:{labels:MAN.meses.map(m=>MS[+m.slice(5)]),datasets:MAN.clases.map((c,i)=>({label:c,data:MAN.serie[c],backgroundColor:pal[i%pal.length]}))},options:{plugins:{tooltip:{mode:'index'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#eee'}}}}});
+  mk('c-mam',{type:'bar',data:{labels:MAN.meses.map(m=>MS[+m.slice(5)]),datasets:MAN.clases.map((c,i)=>({label:c,data:MAN.serie[c],backgroundColor:pal[i%pal.length]}))},options:{plugins:{tooltip:{mode:'index'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(128,128,128,.25)'}}}}});
   $('t-mac').innerHTML=head(['Placa','Clase','Desde','Hasta','Manifiestos','Flete'],[0,0,0,0,1,1])+MAN.cambios.map(x=>row([x[0],x[1],x[2],x[3],x[4],mo(x[5])],['','','','','n','n'])).join('');
   $('t-mac2').innerHTML=head(['Tipo en el pedido'].concat(MAN.cols.map(c=>'Manifiesto: '+c)),[0].concat(MAN.cols.map(()=>1)))+MAN.cruce.map(r=>row(r,['']. concat(r.slice(1).map(()=>'n')))).join('');
   $('ma-q').oninput=renderMap;renderMap();
@@ -663,27 +680,17 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
 </script>
 <script>
 (function(){
-  /* Enlace de SharePoint de este archivo. Pegarlo aquí entre comillas para que el botón Compartir lo copie siempre. */
-  var SHARE_URL='';
-  var btn=document.getElementById('btn-compartir'),txt=document.getElementById('btn-compartir-txt');
+  var root=document.documentElement,btn=document.getElementById('btn-tema');
   if(!btn)return;
-  function flash(m){txt.textContent=m;setTimeout(function(){txt.textContent='Compartir'},2000)}
-  function copiar(url){
-    if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(url);
-    return new Promise(function(ok,fail){var t=document.createElement('textarea');t.value=url;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();try{document.execCommand('copy')?ok():fail()}catch(e){fail(e)}document.body.removeChild(t)});
-  }
-  btn.addEventListener('click',function(){
-    var url=location.href.split('#')[0];
-    if(!/^https?:/.test(url)){
-      url=SHARE_URL;
-      if(!url){try{url=localStorage.getItem('shareUrl')||''}catch(e){}}
-      if(!url){url=(prompt('Pegue el enlace de SharePoint de este archivo (se recordará en este equipo):')||'').trim();if(!url)return;try{localStorage.setItem('shareUrl',url)}catch(e){}}
-    }
-    var data={title:document.title||'Validación de tarifas y flota',text:'Validación de tarifas y flota',url:url};
-    var web=/^https?:/.test(url)&&window.top===window,movil=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    var fb=function(){copiar(url).then(function(){flash('Enlace copiado')},function(){flash('No se pudo copiar')})};
-    if(navigator.share&&web&&movil){navigator.share(data).catch(function(e){if(e&&e.name==='AbortError')return;fb()})}else fb();
-  });
+  var ico=document.getElementById('btn-tema-ico'),txt=document.getElementById('btn-tema-txt');
+  var SOL='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  var LUNA='<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+  function actual(){var t=root.getAttribute('data-theme');return t||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}
+  function pintar(){var o=actual()==='dark';ico.innerHTML=o?SOL:LUNA;txt.textContent=o?'Modo claro':'Modo oscuro';
+    if(window.Chart){Chart.defaults.color=o?'#a8adb3':'#595959';try{for(var k in CH){CH[k].update()}}catch(e){}}}
+  try{var g=localStorage.getItem('dashTheme');if(g==='dark'||g==='light')root.setAttribute('data-theme',g)}catch(e){}
+  pintar();
+  btn.addEventListener('click',function(){var t=actual()==='dark'?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('dashTheme',t)}catch(e){}pintar()});
 })();
 </script>
 <!--dash-version--><div id="dash-version" aria-hidden="true" style="position:fixed;left:8px;bottom:5px;z-index:9999;font:10px/1 system-ui,-apple-system,Segoe UI,sans-serif;letter-spacing:.02em;color:inherit;opacity:.5;pointer-events:none;user-select:none">® DN · v3.0</div><!--/dash-version--></body>
