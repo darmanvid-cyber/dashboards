@@ -1,0 +1,120 @@
+<!doctype html><html lang="es"><head><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Renta 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#1b2330;--mu:#6b7686;--bd:#e3e7ee;--ac:#2b6cb0;--ok:#2f855a;--wa:#b7791f;--bad:#c53030;--in:#eef3fa}
+:root[data-theme=dark]{--bg:#12161d;--card:#1b212b;--tx:#e8ecf2;--mu:#98a3b3;--bd:#2c3441;--ac:#63a4e8;--ok:#5cc28a;--wa:#e0b04a;--bad:#f06a6a;--in:#232c3a}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12161d;--card:#1b212b;--tx:#e8ecf2;--mu:#98a3b3;--bd:#2c3441;--ac:#63a4e8;--ok:#5cc28a;--wa:#e0b04a;--bad:#f06a6a;--in:#232c3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,Segoe UI,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:16px;max-width:1200px;margin:auto}
+h1{font-size:20px;margin:0}h2{font-size:15px;margin:0 0 10px}.sub{color:var(--mu);font-size:12px}
+main{max-width:1200px;margin:auto;padding:0 16px 40px;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;overflow:hidden}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}.k b{display:block;font-size:22px;margin-top:2px}.k span{color:var(--mu);font-size:12px}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse}td,th{padding:5px 6px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap}td:first-child,th:first-child{text-align:left;white-space:normal}
+tr.t td{font-weight:700;border-top:2px solid var(--bd)}
+input{width:130px;text-align:right;background:var(--in);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:4px 6px;font:inherit}
+button,.seg label{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit}
+.seg{display:flex;gap:6px}.seg input{display:none;width:auto}.seg input:checked+span{color:var(--ac);font-weight:700}
+.neg{color:var(--bad)}.note{color:var(--mu);font-size:12px;margin-top:6px}.warn{border-left:4px solid var(--wa);padding-left:10px}
+canvas{max-height:280px}.sc{overflow-x:auto}
+</style></head><body>
+<header><div><h1>Impuesto de renta 2026 — provisión y cierre</h1><div class="sub">Fuente: Provision de renta año 2026 (hoja «PyG Oct 26», corte 31-oct) · cifras en millones de pesos salvo indicación</div></div>
+<div class="seg"><label><input type="radio" name="esc" value="corte" checked><span>Corte 31-oct</span></label><label><input type="radio" name="esc" value="cierre"><span>Cierre estimado dic</span></label><button id="th">Tema</button></div></header>
+<main>
+<div class="kpis" id="kpis"></div>
+<div class="g2">
+<div class="card"><h2>Evolución de la provisión por corte mensual</h2><canvas id="c1"></canvas><div class="note">Impuesto a cargo y total a pagar calculados en cada hoja mensual del archivo.</div></div>
+<div class="card"><h2>Utilidad antes de impuestos y renta contabilizada por mes</h2><canvas id="c2"></canvas><div class="note">Renta contabilizada = cuenta 540505. Utilidad = PyG contable (sin renta) por mes.</div></div>
+</div>
+<div class="g2">
+<div class="card sc"><h2>Depuración y liquidación <span class="sub" id="escl"></span></h2><table id="dep"></table></div>
+<div class="card"><h2>Supuestos editables</h2><table id="inp"></table>
+<div class="note">Los valores en azul se pueden cambiar; todo se recalcula. A octubre el archivo no trae provisiones fuera del PyG contable.</div></div>
+</div>
+<div class="g2">
+<div class="card sc"><h2>Costos y gastos no deducibles</h2><table id="nd"></table></div>
+<div class="card" id="obs"><h2>Para revisar</h2><div id="obsb"></div></div>
+</div>
+</main>
+<script>
+const D={"m": {"ing": [4857187679.09, 1944383042.37824, 3547605176.64335, 4152753853.6299, 2984215812.69432, 3023818064.99009, 3807325019.48665, 3159898531.61432, 3015114046.24363, 3484912557.55445], "cos": [1840226720.24803, 3567909393.15623, 1852448771.45285, 1802419913.55817, 1757994987.50327, 1878361001.70219, 2194109980.92884, 2328513639.88052, 2303884923.65548, 2780930388.4022], "adm": [343709329.21011, 705316902.85306, 338466772.51811, 328869621.03638, 308142822.72059, 359308580.05757, 331003013.06892, 341032476.14745, 329399343.63446, 491956062.70473], "vta": [10130335.87, 13107893.52, 12323914.24, 12284474.81, 11982962.83, 18773177.06, 20507906.51, 16283071.85, 20136248.78, 32765448.8], "ino": [70322034.2, 77314333.24, 79646163.06, 99568611.83, 87140755.72, 238639984.77, 142246760.53, 146264617.8, 139672909.3, 245958882.33], "gno": [1094239566.1325, -311842241.5281, 80017296.1888, 647883764.0301, 360779756.9753, 405078609.28786, 526508030.01335, 212577728.8032, 135820973.4159, 291807230.50044], "ren": [1056620000.0, -355000000.0, 49117000.0, 612453000.0, 331677000.0, 371416000.0, 492418297.73, 183430000.0, 99102000.0, 228224000.0]}, "nd": [["GRAVAMEN A LOS MOVIMIENTOS FINANCIEROS 50%", 98498678.125], ["53 COSTOS Y GASTOS DE EJERCICIOS ANTERIORES", 9467834.459999999], ["53 RETENCION EN LA FUENTE", 2077776.3185], ["53 RETENCION DE ICA", 958512.7326999999], ["53 RETENCION FOPAT", 137440.0], ["53 OTROS", 56000.0], ["53 MULTAS, SANCIONES Y LITIGIOS", 2559000.0], ["53 DONACIONES", 40136908.32], ["53 AJUSTE AL PESO", 308499.69814999995], ["53 GASTOS NO DEDUCIBLES", 10517198.01], ["5310 Perdida venta de activos", 37497047.0], ["61 TRANSPORTES FLETES Y ACARREOS MENSAJERIA 10% sin seguridad social", 0.0], ["61 TAXIS Y BUSES", 304000.0], ["73 TAXIS Y BUSES", 9173450.0], ["51 TAXIS Y BUSES", 1005550.0], ["52 TAXIS Y BUSES", 0.0], ["5115 ICA AÑOS ANTERIORES", 0.0]], "snap": [{"n": "Ene", "grav": 3018914498.66006, "cargo": 1056620074.5310209, "pagar": 836049746.6872209, "util": 3005367428.77256}, {"n": "Mar", "grav": 2153178569.287001, "cargo": 750737499.2504504, "pagar": 282241740.26933444, "util": 2102926356.9788013}, {"n": "Abr", "grav": 3903043153.5591016, "cargo": 1363190103.7456856, "pagar": 319353999.1442833, "util": 4141270870.2308016}, {"n": "May", "grav": 4853549528.017891, "cargo": 1694867334.8062618, "pagar": 496538986.90705836, "util": 4769751200.0533905}, {"n": "Jun", "grav": 5920452784.39155, "cargo": 2066283474.5370424, "pagar": 695775538.8757358, "util": 5810788487.76395}, {"n": "Jul", "grav": 7329568473.743769, "cargo": 2558701297.730319, "pagar": 999634024.2128297, "util": 7203972093.6589985}, {"n": "Ago", "grav": 7857062511.220666, "cargo": 2742131306.347233, "pagar": 1051235604.1712923, "util": 7720327884.892656}, {"n": "Sep", "grav": 8318900789.779357, "cargo": 2841232898.342775, "pagar": 997205066.7521574, "util": 8155990712.180447}, {"n": "Oct", "grav": 8673476189.970789, "cargo": 2977334288.409776, "pagar": 953215050.7711029, "util": 8578275342.306438}], "prov": {}, "dona": 40136908.32, "gan": {"ing": 117497047, "perd": 37497047}, "iva": 60348151, "saf": 366504000.0, "cert": 421975628.34, "proy": {"util": 10187178254, "cargo": 3612496689, "pagar": 1055632257, "corte": "Proyección cierre 2026.xlsx (base ene–ago real + sep–dic proyectado)"}};
+const M=v=>(v/1e6).toLocaleString('es-CO',{maximumFractionDigits:1,minimumFractionDigits:1});
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const S={tar:35,tgo:15,aur:3.5,saf:D.saf,cert:D.cert,iva:D.iva,dona:D.dona,gi:D.gan.ing,gp:D.gan.perd,
+ prov:Object.fromEntries(Object.entries(D.prov)),
+ dUtil:0,dIng:0};
+// defaults dic: promedio mensual de utilidad (variación de cortes jun→oct) e ingresos jun–oct
+const sn=D.snap;const iU=sn.findIndex(s=>s.n=='Jun');
+S.dUtil=Math.round((sn[sn.length-1].util-sn[iU].util)/(sn.length-1-iU));
+S.dIng=Math.round(sum(D.m.ing.slice(5,10))/5);
+let esc='corte';
+function calc(){
+ const m=D.m;const ing=sum(m.ing),cos=sum(m.cos),adm=sum(m.adm),vta=sum(m.vta),ino=sum(m.ino),gno=sum(m.gno),ren=sum(m.ren);
+ const prov=sum(Object.values(S.prov));
+ let util=ing-cos-adm-vta+ino-gno+ren-prov, ingT=ing, inoT=ino;
+ const nd=sum(D.nd.map(x=>x[1]));
+ let cierre=esc=='cierre'; if(cierre){util+=S.dUtil;ingT+=S.dIng;}
+ const grav=util+nd-S.gi;
+ const i35=grav*S.tar/100, i15=(S.gi-S.gp)*S.tgo/100, desc=S.dona*.25;
+ const cargo=i35+i15-desc-S.iva;
+ const aut=(ingT+inoT)*S.aur/100;
+ const pagar=cargo-S.saf-aut-S.cert;
+ return {ing:ingT,cos,adm,vta,ino:inoT,gno,ren,prov,util,nd,grav,i35,i15,desc,cargo,aut,pagar,cierre};
+}
+let c1,c2;
+function render(){
+ const r=calc();
+ const bruta=r.util;
+ document.getElementById('escl').textContent=r.cierre?'· cierre estimado a dic (incluye supuestos de dic; sin nov)':'· corte 31-oct';
+ const cont=r.ren;
+ document.getElementById('kpis').innerHTML=[
+  ['Utilidad antes de impuestos',M(r.util)+' M'],['Renta líquida gravable',M(r.grav)+' M'],
+  ['Impuesto a cargo',M(r.cargo)+' M'],['Tasa efectiva s/ utilidad',(r.cargo/r.util*100).toFixed(1)+' %'],
+  ['Retenciones, autorret. y saldo a favor',M(S.saf+r.aut+S.cert)+' M'],
+  ['Total a pagar (DIAN)',M(r.pagar)+' M'],
+  ['Renta ya contabilizada (540505)',M(cont)+' M'],['Provisión pendiente de contabilizar',M(r.cargo-cont)+' M']
+ ].map(x=>`<div class="k"><span>${x[0]}</span><b class="${x[0].startsWith('Provisión pend')&&r.cargo-cont>0?'':''}">${x[1]}</b></div>`).join('');
+ const L=(a,b,t)=>`<tr class="${t?'t':''}"><td>${a}</td><td>${b}</td></tr>`;
+ document.getElementById('dep').innerHTML=
+  L('Ingresos operacionales',M(r.ing))+L('(−) Costos',M(r.cos))+L('(−) Gastos de administración',M(r.adm))+L('(−) Gastos de venta',M(r.vta))+
+  L('(+) Ingresos no operacionales',M(r.ino))+L('(−) Gastos no operacionales',M(r.gno))+L('(+) Renta contabilizada (se revierte)',M(r.ren))+
+  L('(−) Provisiones y ajustes',M(r.prov))+(r.cierre?L('(+) Utilidad estimada dic',M(S.dUtil)):'')+
+  L('Utilidad antes de impuestos',M(r.util),1)+L('(+) No deducibles',M(r.nd))+L('(−) Ingreso ganancia ocasional',M(S.gi))+
+  L('Renta líquida gravable',M(r.grav),1)+L('Impuesto '+S.tar+'%',M(r.i35))+L('Impuesto ganancia ocasional '+S.tgo+'%',M(r.i15))+
+  L('(−) Descuento 25% donaciones',M(r.desc))+L('(−) IVA activos fijos productivos',M(S.iva))+L('Impuesto a cargo',M(r.cargo),1)+
+  L('(−) Saldo a favor renta 2025',M(S.saf))+L('(−) Autorretenciones ('+S.aur+'%)',M(r.aut))+L('(−) Retenciones de clientes',M(S.cert))+
+  L('Total a pagar',M(r.pagar),1);
+ const inp=(k,l,v,sc)=>`<tr><td>${l}</td><td><input data-k="${k}" value="${Math.round(v).toLocaleString('es-CO')}"></td></tr>`;
+ document.getElementById('inp').innerHTML=
+  inp('tar','Tarifa general (%)',S.tar)+inp('aur','Autorretención (% de ingresos)',S.aur)+inp('saf','Saldo a favor 2025',S.saf)+inp('cert','Retenciones certificadas de clientes',S.cert)+
+  inp('iva','IVA activos fijos productivos',S.iva)+inp('dona','Donaciones (base 25%)',S.dona)+inp('gi','Ingreso ganancia ocasional',S.gi)+inp('gp','Pérdida venta de activos',S.gp)+
+  Object.entries(S.prov).map(([k,v])=>inp('p:'+k,k,v)).join('')+
+  inp('dUtil','Utilidad estimada dic (escenario cierre)',S.dUtil)+inp('dIng','Ingresos estimados dic (escenario cierre)',S.dIng);
+ document.querySelectorAll('#inp input').forEach(e=>e.onchange=()=>{let v=parseFloat(e.value.replace(/\./g,'').replace(',','.'));if(isNaN(v))return;const k=e.dataset.k;if(k.startsWith('p:'))S.prov[k.slice(2)]=v;else S[k]=v;render();});
+ document.getElementById('nd').innerHTML=D.nd.map(x=>`<tr><td>${x[0]}</td><td>${M(x[1])}</td></tr>`).join('')+L('Total no deducible',M(r.nd),1);
+ const dup=D.nd.filter(x=>x[0].includes('TAXIS')&&x[0].startsWith('5'));
+ document.getElementById('obsb').innerHTML=`<ul style="margin:0;padding-left:18px">
+ <li>Renta contabilizada ${M(cont)} M vs impuesto a cargo ${M(r.cargo)} M: ${r.cargo>cont?'faltan <b>'+M(r.cargo-cont)+' M</b> por provisionar':'sobra provisión de '+M(cont-r.cargo)+' M'}.</li>
+ <li>Las retenciones de clientes (${M(S.cert)} M) vienen marcadas «actualiza» en el archivo: conviene cruzarlas con certificados recibidos.</li>
+ <li>Escenario «Cierre estimado dic»: supone utilidad adicional de ${M(S.dUtil)} M (promedio mensual jun–oct de los cortes) e ingresos de ${M(S.dIng)} M; es un supuesto, no un cierre.</li>
+ <li>Proyección de cierre del archivo «Proyeccion cierre 2026.xlsx» (base ago + proyección sep–dic): utilidad ${M(D.proy.util)} M, impuesto ${M(D.proy.cargo)} M, a pagar ${M(D.proy.pagar)} M — útil para comparar.</li></ul>
+ <div class="note warn">Estimación de planeación sobre el archivo de provisión; no sustituye la depuración fiscal ni al revisor fiscal.</div>`;
+ const col=getComputedStyle(document.documentElement);const ac='#3b82c4',ok='#2f9e6a',wa='#d99a2b',bad='#d24b4b';
+ const lab=sn.map(s=>s.n);
+ if(c1)c1.destroy();c1=new Chart(document.getElementById('c1'),{type:'line',data:{labels:lab,datasets:[
+  {label:'Impuesto a cargo',data:sn.map(s=>s.cargo/1e6),borderColor:ac,backgroundColor:ac,tension:.2},
+  {label:'Total a pagar',data:sn.map(s=>s.pagar/1e6),borderColor:wa,backgroundColor:wa,tension:.2}]},
+  options:{responsive:true,plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+M(c.raw*1e6)+' M'}}},scales:{y:{ticks:{callback:v=>v.toLocaleString('es-CO')}}}}});
+ const mm=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct',];
+ const ut=D.m.ing.map((_,i)=>(D.m.ing[i]-D.m.cos[i]-D.m.adm[i]-D.m.vta[i]+D.m.ino[i]-D.m.gno[i]+D.m.ren[i])/1e6);
+ if(c2)c2.destroy();c2=new Chart(document.getElementById('c2'),{type:'bar',data:{labels:mm,datasets:[
+  {label:'Utilidad antes de impuestos',data:ut,backgroundColor:ok},{label:'Renta contabilizada',data:D.m.ren.map(x=>x/1e6),backgroundColor:bad}]},
+  options:{responsive:true,plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+M(c.raw*1e6)+' M'}}},scales:{y:{ticks:{callback:v=>v.toLocaleString('es-CO')}}}}});
+}
+document.querySelectorAll('input[name=esc]').forEach(e=>e.onchange=()=>{esc=e.value;render();});
+document.getElementById('th').onclick=()=>{const d=document.documentElement;const dk=d.dataset.theme?d.dataset.theme=='dark':matchMedia('(prefers-color-scheme:dark)').matches;d.dataset.theme=dk?'light':'dark';};
+render();
+</script><!--dash-version--><div id="dash-version" aria-hidden="true" style="position:fixed;left:8px;bottom:5px;z-index:9999;font:10px/1 system-ui,-apple-system,Segoe UI,sans-serif;letter-spacing:.02em;color:inherit;opacity:.5;pointer-events:none;user-select:none">® DN · v3.0</div><!--/dash-version--></body></html>
