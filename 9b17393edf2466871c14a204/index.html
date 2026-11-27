@@ -51,6 +51,7 @@ let sel=new Set(D.meses);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fM=v=>(v/1e6).toLocaleString("es-CO",{minimumFractionDigits:1,maximumFractionDigits:1});
+const fP2=v=>(isFinite(v)?v*100:0).toLocaleString("es-CO",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";
 const fP=v=>(isFinite(v)?v*100:0).toLocaleString("es-CO",{minimumFractionDigits:1,maximumFractionDigits:1})+"%";
 const idx=()=>D.meses.map((m,i)=>sel.has(m)?i:-1).filter(i=>i>=0);
 const sum=(a,ix)=>ix.reduce((s,i)=>s+a[i],0);
@@ -78,23 +79,23 @@ function render(){
   $("sub").textContent=`Acumulado de ${ix.length} mes(es) · corte ${D.corte} · cifras en $ millones · base = ingresos totales ${fM(B)}`;
   let h=`<div class="grid kpis">
   <div class="card kpi"><div class="l">Ingresos totales (100 %)</div><div class="v">${fM(B)}</div><div class="d">Operacional ${fM(ING)} · No operac. ${fM(NO)}</div></div>`;
-  CATS.forEach(([k,n,c])=>h+=`<div class="card kpi" style="--c:${c}"><div class="l">${n}</div><div class="v">${fP(tots[k]/B)}</div><div class="d">$ ${fM(tots[k])} M</div></div>`);
-  h+=`<div class="card kpi" style="--c:${UT[2]}"><div class="l">Utilidad</div><div class="v ${ut<0?'neg':''}">${fP(ut/B)}</div><div class="d">$ ${fM(ut)} M</div></div></div>`;
+  CATS.forEach(([k,n,c])=>h+=`<div class="card kpi" style="--c:${c}"><div class="l">${n}</div><div class="v">${fP2(tots[k]/B)}</div><div class="d">$ ${fM(tots[k])} M</div></div>`);
+  h+=`<div class="card kpi" style="--c:${UT[2]}"><div class="l">Utilidad</div><div class="v ${ut<0?'neg':''}">${fP2(ut/B)}</div><div class="d">$ ${fM(ut)} M</div></div></div>`;
   const parts=[...CATS.map(([k,n,c])=>[n,c,tots[k]]),[UT[1],UT[2],ut]];
   h+=`<div class="card" style="margin-bottom:12px"><h2>¿En qué se va cada $100 de ingreso?</h2><div class="stack">${parts.map(([n,c,v])=>v>0?`<i style="width:${v/B*100}%;background:${c}" title="${n} ${fP(v/B)}"></i>`:"").join("")}</div>
-  <div class="leg">${parts.map(([n,c,v])=>`<span><span class="sw" style="background:${c}"></span>${n} <b>${fP(v/B)}</b></span>`).join("")}<span>Suma: <b>${fP(parts.reduce((s,p)=>s+p[2],0)/B)}</b></span></div></div>`;
+  <div class="leg">${parts.map(([n,c,v])=>`<span><span class="sw" style="background:${c}"></span>${n} <b>${fP2(v/B)}</b></span>`).join("")}<span>Suma: <b>${fP2(parts.reduce((s,p)=>s+p[2],0)/B)}</b></span></div></div>`;
   h+=`<div class="grid g2">`;
   CATS.forEach(([k,n,c])=>{
     const t=topN(k,ix),T=tots[k];
     const monthly=D.meses.map((m,i)=>D.cats[k].tot[i]/b[i]);
     h+=`<div class="card" style="--c:${c}"><h2><span>${n}</span><button data-dl="${k}">⬇ Descargar detalle</button></h2>
-    <div><span class="big">${fP(T/B)}</span> <span class="note">del ingreso · $ ${fM(T)} M</span></div>${spark(monthly,c)}
+    <div><span class="big">${fP2(T/B)}</span> <span class="note">del ingreso · $ ${fM(T)} M</span></div>${spark(monthly,c)}
     <div class="note" style="margin:4px 0">Top 5 ${k==="IMP"?"conceptos":"terceros"} que más consumieron</div>
     <table><tr><th>${k==="IMP"?"Concepto":"Tercero"}</th><th>$ M</th><th>% ingreso</th><th>% sección</th></tr>
     ${t.map(([nm,v])=>`<tr><td class="nm" title="${esc(nm)}">${esc(nm)}</td><td>${fM(v)}</td><td><span class="bar"><i style="width:${Math.max(0,Math.min(100,v/T*100))}%"></i></span>${fP(v/B)}</td><td>${fP(v/T)}</td></tr>`).join("")}</table></div>`;});
   const utm=D.meses.map((m,i)=>(b[i]-CATS.reduce((s,[k])=>s+D.cats[k].tot[i],0))/b[i]);
   h+=`<div class="card" style="--c:${UT[2]}"><h2><span>Utilidad</span><button data-dl="UT">⬇ Descargar P&amp;G mensual</button></h2>
-  <div><span class="big" style="${ut<0?'color:var(--bad)':''}">${fP(ut/B)}</span> <span class="note">del ingreso · $ ${fM(ut)} M</span></div>${spark(utm,UT[2])}
+  <div><span class="big" style="${ut<0?'color:var(--bad)':''}">${fP2(ut/B)}</span> <span class="note">del ingreso · $ ${fM(ut)} M</span></div>${spark(utm,UT[2])}
   <div class="note">Meses en pérdida en rojo. Utilidad = ingresos totales − proveedores − servicios complementarios − impuestos − socios.</div></div></div>`;
   h+=`<div class="card"><h2>Resumen mensual (% del ingreso)</h2><div class="scroll"><table><tr><th>Mes</th><th>Ingresos $M</th>${CATS.map(c=>`<th>${c[1]}</th>`).join("")}<th>Utilidad</th><th>Suma</th></tr>
   ${D.meses.map((m,i)=>{const cs=CATS.map(([k])=>D.cats[k].tot[i]),u=b[i]-cs.reduce((a,b)=>a+b,0);
