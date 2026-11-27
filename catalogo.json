@@ -1,7 +1,7 @@
 {
  "areas": [
   "Finanzas",
-  "Fletes y operaciones",
+  "Operaciones",
   "Presupuesto 2027",
   "Renta e impuestos",
   "Otros"
@@ -32,19 +32,19 @@
    "tag": "Acumulado"
   },
   "fletes-semanal": {
-   "area": "Fletes y operaciones",
+   "area": "Operaciones",
    "titulo": "Fletes · Semanal",
    "desc": "Costo de fletes por semana contra presupuesto, por cliente y regional.",
    "tag": "Semanal"
   },
   "fletes-anual-2026": {
-   "area": "Fletes y operaciones",
+   "area": "Operaciones",
    "titulo": "Fletes · Acumulado anual 2026",
    "desc": "Fletes del año (manifiestos vs contables) contra presupuesto, por mes.",
    "tag": "Acumulado"
   },
   "tarifas-flota": {
-   "area": "Fletes y operaciones",
+   "area": "Operaciones",
    "titulo": "Validación de tarifas y flota",
    "desc": "Manifiestos, rutas, ocupación y validación de tarifas.",
    "tag": "Análisis"

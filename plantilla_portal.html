@@ -7,7 +7,7 @@
 .app{display:grid;grid-template-columns:270px 1fr;min-height:100vh}
 aside{background:radial-gradient(circle at 20% 0,#1b3324 0,var(--side) 55%);color:#e9efe9;padding:18px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
 .brand{display:flex;justify-content:center;align-items:center;padding:12px 12px 16px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:14px}
-.lg{width:100%;max-width:230px;display:block}.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--acc2),#2f7d32);display:grid;place-items:center;font-weight:800;color:#0e1913;font-size:20px}
+.lw{position:relative;width:100%;max-width:236px;background:#f6f8f3;border-radius:16px;padding:10px 8px 6px;overflow:visible}.lg{width:100%;display:block}.hat.h2{left:15%;top:14%;width:10%;transform:rotate(-12deg)}.hat{position:absolute;left:56%;top:6%;width:16%;transform:rotate(10deg);filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--acc2),#2f7d32);display:grid;place-items:center;font-weight:800;color:#0e1913;font-size:20px}
 .brand b{display:block;letter-spacing:.14em;font-size:13px}.brand span{font-size:11px;color:#9fb3a5;letter-spacing:.08em}
 .sec{font-size:11px;letter-spacing:.16em;color:#7e9486;padding:10px 12px 6px}
 nav button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;color:#dfe8e0;font:inherit;font-size:15px;padding:11px 12px;border-radius:12px;cursor:pointer;margin-bottom:2px}
@@ -46,7 +46,7 @@ a.card:hover .go{background:var(--acc2);color:#0e1913}
 .none{color:var(--muted);padding:30px 0}
 @media(max-width:860px){.app{grid-template-columns:1fr}aside{position:fixed;left:-290px;width:270px;z-index:20;transition:.2s}aside.open{left:0}.burger{display:inline-flex}.in{padding:18px}.top{padding:12px 16px}h1{font-size:26px}.search{min-width:0;flex:1}}
 #snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}</style></head><body><canvas id="snow"></canvas><div class="app">
-<aside id="side"><div class="brand"><img class="lg" alt="Logística Integra" src="/*LOGO*/"></div>
+<aside id="side"><div class="brand"><div class="lw"><img class="lg" alt="Logística Integra" src="/*LOGO*/"><svg class="hat" viewBox="0 0 100 90"><path d="M8 70 C20 20 55 5 88 18 C70 30 62 50 60 70 Z" fill="#d62828"/><path d="M4 66 Q40 82 92 66 Q96 80 88 84 Q40 96 6 82 Q-2 74 4 66Z" fill="#fff"/><circle cx="90" cy="18" r="10" fill="#fff"/></svg><svg class="hat h2" viewBox="0 0 100 90"><path d="M8 70 C20 20 55 5 88 18 C70 30 62 50 60 70 Z" fill="#d62828"/><path d="M4 66 Q40 82 92 66 Q96 80 88 84 Q40 96 6 82 Q-2 74 4 66Z" fill="#fff"/><circle cx="90" cy="18" r="10" fill="#fff"/></svg></div></div>
 <div class="sec">ELEGIR ÁREA</div><nav id="nav"></nav>
 <div class="side-foot"><div class="date"><span>FECHA SISTEMA</span><b id="hoy"></b></div><div class="ver">PORTAL DE DASHBOARDS · ® DN</div></div></aside>
 <main><div class="top"><button class="pill burger" id="bg">☰</button><div><div class="t1">LOGÍSTICA INTEGRA</div><div class="t2" id="crumb">INICIO</div></div><div class="sp"></div>
@@ -57,7 +57,7 @@ a.card:hover .go{background:var(--acc2);color:#0e1913}
 <script>
 const D=/*DATA*/null;let area="Todas",q="",favs=new Set();
 try{favs=new Set(JSON.parse(localStorage.getItem("favs")||"[]"))}catch(e){}
-const IC={"Todas":"🏠","Favoritos":"⭐","Finanzas":"📊","Fletes y operaciones":"🚚","Presupuesto 2027":"🎯","Renta e impuestos":"🧾","Otros":"🗂️"};
+const IC={"Todas":"🏠","Favoritos":"⭐","Finanzas":"📊","Operaciones":"🚚","Presupuesto 2027":"🎯","Renta e impuestos":"🧾","Otros":"🗂️"};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $=i=>document.getElementById(i);
 const now=new Date(),h=now.getHours();
