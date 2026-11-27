@@ -13,4 +13,6 @@ for l in open("enlaces.tsv",encoding="utf-8"):
     items.append(c)
 data={"areas":cat["areas"],"items":items}
 html=open("plantilla_portal.html",encoding="utf-8").read().replace("/*DATA*/null",json.dumps(data,ensure_ascii=False))
+import base64
+html=html.replace("/*LOGO*/","data:image/png;base64,"+base64.b64encode(open("logo_integra.png","rb").read()).decode())
 open("portal.html","w",encoding="utf-8").write(html); print(len(items),"dashes en el portal")
