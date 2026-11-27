@@ -42,7 +42,6 @@ a.card:hover{transform:translateY(-3px);border-color:var(--acc2)}
 .tag{background:var(--accsoft);color:var(--acc);border-radius:999px;padding:2px 10px;font-weight:700}
 .go{margin-left:auto;background:var(--acc);color:#fff;border-radius:12px;padding:8px 16px;font-weight:700;font-size:14px}
 a.card:hover .go{background:var(--acc2);color:#0e1913}
-.fav{position:absolute;top:12px;right:12px;border:0;background:none;font-size:20px;color:var(--line);cursor:pointer;padding:2px 6px}.fav.on{color:#f0a21a}
 .none{color:var(--muted);padding:30px 0}
 @media(max-width:860px){.app{grid-template-columns:1fr}aside{position:fixed;left:-290px;width:270px;z-index:20;transition:.2s}aside.open{left:0}.burger{display:inline-flex}.in{padding:18px}.top{padding:12px 16px}h1{font-size:26px}.search{min-width:0;flex:1}}
 #snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}</style></head><body><canvas id="snow"></canvas><div class="app">
@@ -55,9 +54,8 @@ a.card:hover .go{background:var(--acc2);color:#0e1913}
 <div class="box"><h3>¿Qué quieres consultar?</h3><p>Elige un área y verás sus dashboards. Puedes volver aquí desde cualquier dash con el botón «← Dashboards».</p><div class="chips" id="chips"></div></div>
 <div id="app"></div></div></main></div>
 <script>
-const D=/*DATA*/null;let area="Todas",q="",favs=new Set();
-try{favs=new Set(JSON.parse(localStorage.getItem("favs")||"[]"))}catch(e){}
-const IC={"Todas":"🏠","Favoritos":"⭐","Finanzas":"📊","Operaciones":"🚚","Presupuesto 2027":"🎯","Renta e impuestos":"🧾","Otros":"🗂️"};
+const D=/*DATA*/null;let area="Todas",q="";
+const IC={"Todas":"🏠","Finanzas":"📊","Operaciones":"🚚","Presupuesto 2027":"🎯","Renta e impuestos":"🧾","Otros":"🗂️"};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $=i=>document.getElementById(i);
 const now=new Date(),h=now.getHours();
@@ -65,20 +63,19 @@ $("hi").textContent=(h<12?"Buenos días":h<19?"Buenas tardes":"Buenas noches")+"
 const f=now.toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 $("fecha").textContent=f.charAt(0).toUpperCase()+f.slice(1)+" · "+D.items.length+" dashboards en "+D.areas.length+" áreas";
 $("hoy").textContent=now.toLocaleDateString("es-CO");
-const count=a=>a==="Todas"?D.items.length:a==="Favoritos"?D.items.filter(c=>favs.has(c.titulo)).length:D.items.filter(c=>c.area===a).length;
-function menu(){const L=["Todas","Favoritos",...D.areas];
+const count=a=>a==="Todas"?D.items.length:D.items.filter(c=>c.area===a).length;
+function menu(){const L=["Todas",...D.areas];
  $("nav").innerHTML=L.map(a=>`<button data-a="${a}" class="${a===area?'on':''}"><span class="ic">${IC[a]||"📁"}</span>${a==="Todas"?"Todos":a}<span class="n">${count(a)}</span></button>`).join("");
- $("chips").innerHTML=L.filter(a=>a!=="Favoritos").map(a=>`<button data-a="${a}" class="${a===area?'on':''}">${IC[a]||""} ${a==="Todas"?"Todos":a}</button>`).join("");
+ $("chips").innerHTML=L.map(a=>`<button data-a="${a}" class="${a===area?'on':''}">${IC[a]||""} ${a==="Todas"?"Todos":a}</button>`).join("");
  document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{area=b.dataset.a;$("side").classList.remove("open");menu();draw();window.scrollTo(0,0)});
  $("crumb").textContent=(area==="Todas"?"INICIO":area.toUpperCase());$("cnt").textContent=count(area)+" dashboards";}
-function card(c){return `<a class="card" href="${c.href}"><button class="fav ${favs.has(c.titulo)?'on':''}" data-f="${esc(c.titulo)}">★</button><div class="ico">${IC[c.area]||"📁"}</div><div class="t">${esc(c.titulo)}</div><div class="d">${esc(c.desc)}</div><div class="m"><span class="tag">${esc(c.tag)}</span><span>${c.upd?"Act. "+c.upd:""}</span><span class="go">Abrir →</span></div></a>`}
+function card(c){return `<a class="card" href="${c.href}"><div class="ico">${IC[c.area]||"📁"}</div><div class="t">${esc(c.titulo)}</div><div class="d">${esc(c.desc)}</div><div class="m"><span class="tag">${esc(c.tag)}</span><span>${c.upd?"Act. "+c.upd:""}</span><span class="go">Abrir →</span></div></a>`}
 function draw(){const s=q.toLowerCase();
- const it=D.items.filter(c=>(area==="Todas"||(area==="Favoritos"?favs.has(c.titulo):c.area===area))&&(!s||(c.titulo+" "+c.desc+" "+c.tag+" "+c.area).toLowerCase().includes(s)));
- let o="";if(!it.length)o=`<div class="none">${area==="Favoritos"?"Aún no marcaste favoritos (★).":"Sin resultados."}</div>`;
- else if(area==="Todas"||area==="Favoritos"||s){D.areas.forEach(a=>{const x=it.filter(c=>c.area===a);if(x.length)o+=`<h2 class="a">${IC[a]||""} ${a}</h2><div class="grid">${x.map(card).join("")}</div>`})}
+ const it=D.items.filter(c=>(area==="Todas"||c.area===area)&&(!s||(c.titulo+" "+c.desc+" "+c.tag+" "+c.area).toLowerCase().includes(s)));
+ let o="";if(!it.length)o=`<div class="none">Sin resultados.</div>`;
+ else if(area==="Todas"||s){D.areas.forEach(a=>{const x=it.filter(c=>c.area===a);if(x.length)o+=`<h2 class="a">${IC[a]||""} ${a}</h2><div class="grid">${x.map(card).join("")}</div>`})}
  else o=`<div class="grid">${it.map(card).join("")}</div>`;
- $("app").innerHTML=o;
- document.querySelectorAll("[data-f]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const t=b.dataset.f;favs.has(t)?favs.delete(t):favs.add(t);try{localStorage.setItem("favs",JSON.stringify([...favs]))}catch(x){}menu();draw();});}
+ $("app").innerHTML=o;}
 $("q").oninput=e=>{q=e.target.value;draw()};$("bg").onclick=()=>$("side").classList.toggle("open");
 $("theme").onclick=()=>{const r=document.documentElement,d=r.dataset.theme==="dark"||(!r.dataset.theme&&matchMedia("(prefers-color-scheme:dark)").matches);r.dataset.theme=d?"light":"dark";};
 menu();draw();
