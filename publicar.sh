@@ -17,6 +17,7 @@ open(sys.argv[2], 'w', encoding='utf-8').write(s)
 PY
   python3 poner_version.py --version 3.0 "$token/index.html" >/dev/null
   [ "$slug" != "portal" ] && python3 poner_volver.py "../$PORTAL/" "$token/index.html" >/dev/null
+  python3 -c "import json,sys;sys.exit(0 if sys.argv[1] in json.load(open('catalogo.json'))['abiertos'] else 1)" "$slug" || python3 cifrar.py ../dashboards_codigo.txt "$token/index.html" "$token/index.html"
 done < enlaces.tsv
 printf 'User-agent: *\nDisallow: /\n' > robots.txt
 touch .nojekyll

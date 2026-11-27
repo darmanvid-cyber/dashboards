@@ -44,7 +44,12 @@ a.card:hover{transform:translateY(-3px);border-color:var(--acc2)}
 a.card:hover .go{background:var(--acc2);color:#0e1913}
 .none{color:var(--muted);padding:30px 0}
 @media(max-width:860px){.app{grid-template-columns:1fr}aside{position:fixed;left:-290px;width:270px;z-index:20;transition:.2s}aside.open{left:0}.burger{display:inline-flex}.in{padding:18px}.top{padding:12px 16px}h1{font-size:26px}.search{min-width:0;flex:1}}
-#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}</style></head><body><canvas id="snow"></canvas><div class="app">
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}.lock{font-size:13px;margin-left:6px}
+#mod{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;place-items:center;z-index:50}#mod.on{display:grid}
+#mod .b{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;max-width:340px;width:90%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+#mod input{width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin:14px 0 10px;text-align:center}
+#mod button{width:100%;padding:11px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:700 15px inherit;cursor:pointer}#mod .x{background:none;color:var(--muted);margin-top:6px;font-weight:400}#er{color:#d03b3b;min-height:20px;font-size:13px}
+</style></head><body><div id="mod"><div class="b"><div style="font-size:34px">🔒</div><h3 style="margin:6px 0">Acceso protegido</h3><div class="sub" style="margin:0">Ingresa el código para abrir este dashboard</div><input id="cod" type="password" placeholder="Código"><button id="ok">Entrar</button><div id="er"></div><button class="x" id="cx">Cancelar</button></div></div><canvas id="snow"></canvas><div class="app">
 <aside id="side"><div class="brand"><div class="lw"><img class="lg" alt="Logística Integra" src="/*LOGO*/"><svg class="hat" viewBox="0 0 100 90"><path d="M8 70 C20 20 55 5 88 18 C70 30 62 50 60 70 Z" fill="#d62828"/><path d="M4 66 Q40 82 92 66 Q96 80 88 84 Q40 96 6 82 Q-2 74 4 66Z" fill="#fff"/><circle cx="90" cy="18" r="10" fill="#fff"/></svg><svg class="hat h2" viewBox="0 0 100 90"><path d="M8 70 C20 20 55 5 88 18 C70 30 62 50 60 70 Z" fill="#d62828"/><path d="M4 66 Q40 82 92 66 Q96 80 88 84 Q40 96 6 82 Q-2 74 4 66Z" fill="#fff"/><circle cx="90" cy="18" r="10" fill="#fff"/></svg></div></div>
 <div class="sec">ELEGIR ÁREA</div><nav id="nav"></nav>
 <div class="side-foot"><div class="date"><span>FECHA SISTEMA</span><b id="hoy"></b></div><div class="ver">PORTAL DE DASHBOARDS · ® DN</div></div></aside>
@@ -69,13 +74,25 @@ function menu(){const L=["Todas",...D.areas];
  $("chips").innerHTML=L.map(a=>`<button data-a="${a}" class="${a===area?'on':''}">${IC[a]||""} ${a==="Todas"?"Todos":a}</button>`).join("");
  document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{area=b.dataset.a;$("side").classList.remove("open");menu();draw();window.scrollTo(0,0)});
  $("crumb").textContent=(area==="Todas"?"INICIO":area.toUpperCase());$("cnt").textContent=count(area)+" dashboards";}
-function card(c){return `<a class="card" href="${c.href}"><div class="ico">${IC[c.area]||"📁"}</div><div class="t">${esc(c.titulo)}</div><div class="d">${esc(c.desc)}</div><div class="m"><span class="tag">${esc(c.tag)}</span><span>${c.upd?"Act. "+c.upd:""}</span><span class="go">Abrir →</span></div></a>`}
+function card(c){return `<a class="card" href="${c.href}" ${c.prot?'data-p="1"':""}><div class="ico">${IC[c.area]||"📁"}</div><div class="t">${esc(c.titulo)}</div><div class="d">${esc(c.desc)}</div><div class="m"><span class="tag">${esc(c.tag)}</span><span>${c.upd?"Act. "+c.upd:""}</span><span class="go">${c.prot&&!unlocked()?"🔒 ":""}Abrir →</span></div></a>`}
 function draw(){const s=q.toLowerCase();
  const it=D.items.filter(c=>(area==="Todas"||c.area===area)&&(!s||(c.titulo+" "+c.desc+" "+c.tag+" "+c.area).toLowerCase().includes(s)));
  let o="";if(!it.length)o=`<div class="none">Sin resultados.</div>`;
  else if(area==="Todas"||s){D.areas.forEach(a=>{const x=it.filter(c=>c.area===a);if(x.length)o+=`<h2 class="a">${IC[a]||""} ${a}</h2><div class="grid">${x.map(card).join("")}</div>`})}
  else o=`<div class="grid">${it.map(card).join("")}</div>`;
- $("app").innerHTML=o;}
+ $("app").innerHTML=o;bindLocks();}
+
+let pend=null;
+const unlocked=()=>{try{return !!sessionStorage.getItem("dashcode")}catch(e){return false}};
+async function dec(code,b){const d=Uint8Array.from(atob(b),c=>c.charCodeAt(0)),salt=d.slice(0,16),iv=d.slice(16,28),ct=d.slice(28);
+ const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveKey"]);
+ const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:200000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+ return new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv},key,ct));}
+async function tryCode(){const v=$("cod").value;$("er").textContent="Verificando…";
+ try{if(await dec(v,D.verif)==="ok"){try{sessionStorage.setItem("dashcode",v)}catch(e){}$("mod").classList.remove("on");location.href=pend;return}}catch(e){}
+ $("er").textContent="Código incorrecto";}
+function bindLocks(){document.querySelectorAll("a.card[data-p]").forEach(a=>a.onclick=e=>{if(unlocked())return;e.preventDefault();pend=a.getAttribute("href");$("cod").value="";$("er").textContent="";$("mod").classList.add("on");$("cod").focus();});}
+$("ok").onclick=tryCode;$("cod").onkeydown=e=>{if(e.key==="Enter")tryCode()};$("cx").onclick=()=>$("mod").classList.remove("on");
 $("q").oninput=e=>{q=e.target.value;draw()};$("bg").onclick=()=>$("side").classList.toggle("open");
 $("theme").onclick=()=>{const r=document.documentElement,d=r.dataset.theme==="dark"||(!r.dataset.theme&&matchMedia("(prefers-color-scheme:dark)").matches);r.dataset.theme=d?"light":"dark";};
 menu();draw();

@@ -7,11 +7,13 @@ items=[]
 for l in open("enlaces.tsv",encoding="utf-8"):
     p=l.rstrip("\n").split("\t")
     if len(p)<3 or p[0] not in cat["dashes"]: continue
-    c=dict(cat["dashes"][p[0]]); c["href"]="../"+p[1]+"/"
+    c=dict(cat["dashes"][p[0]]); c["prot"]=p[0] not in cat.get("abiertos",[]); c["href"]="../"+p[1]+"/"
     try: c["upd"]=datetime.date.fromtimestamp(os.path.getmtime(p[2])).isoformat()
     except Exception: c["upd"]=""
     items.append(c)
-data={"areas":cat["areas"],"items":items}
+import cifrar
+code=open("../dashboards_codigo.txt",encoding="utf-8").read().strip()
+data={"areas":cat["areas"],"items":items,"verif":cifrar.enc(b"ok",code)}
 html=open("plantilla_portal.html",encoding="utf-8").read().replace("/*DATA*/null",json.dumps(data,ensure_ascii=False))
 import base64
 html=html.replace("/*LOGO*/","data:image/png;base64,"+base64.b64encode(open("logo_integra.png","rb").read()).decode())

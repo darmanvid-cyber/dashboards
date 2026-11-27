@@ -67,5 +67,11 @@
    "desc": "Provisión de renta 2026: a cargo, a pagar y anticipos.",
    "tag": "Acumulado"
   }
- }
+ },
+ "abiertos": [
+  "fletes-semanal",
+  "fletes-anual-2026",
+  "tarifas-flota",
+  "portal"
+ ]
 }
