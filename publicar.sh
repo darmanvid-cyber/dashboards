@@ -2,6 +2,7 @@
 # Copia los dashboards más recientes a carpetas con nombre aleatorio y los sube a GitHub Pages.
 # Uso: bash publicar.sh ["mensaje"]      (lee enlaces.tsv: slug <TAB> token <TAB> origen)
 cd "$(dirname "$0")" || exit 1
+python3 generar_portal.py
 while IFS=$'\t' read -r slug token src; do
   [ -f "$src" ] || { echo "FALTA: $src"; continue; }
   mkdir -p "$token"

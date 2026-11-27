@@ -1,0 +1,44 @@
+<!doctype html><html lang="es"><head><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboards</title>
+<style>
+:root{--page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--acc:#2a78d6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--grid:#2c2c2a;--axis:#383835;--acc:#3987e5}}
+:root[data-theme="dark"]{--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--grid:#2c2c2a;--axis:#383835;--acc:#3987e5}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+h1{margin:0;font-size:22px}.sub{color:var(--muted);font-size:12px}
+button,input{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:8px;padding:6px 12px}
+button{cursor:pointer}button.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px}.bar input{min-width:200px;margin-left:auto}
+h2{font-size:13px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+a.card{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:14px 16px;color:inherit;text-decoration:none;position:relative}
+a.card:hover{border-color:var(--acc)}
+.t{font-weight:700;font-size:15px;padding-right:28px}.d{color:var(--ink2);font-size:13px;flex:1}
+.m{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+.tag{padding:1px 8px;border-radius:999px;border:1px solid var(--axis);color:var(--ink2);font-weight:600}
+.go{color:var(--acc);font-weight:600}.fav{position:absolute;top:8px;right:8px;border:0;background:none;font-size:18px;padding:2px 6px;color:var(--muted)}.fav.on{color:#eda100;background:none}
+.none{color:var(--muted);padding:20px 0}
+</style></head><body><div class="wrap">
+<header><div><h1>Dashboards</h1><div class="sub" id="sub"></div></div><button id="theme">◐ Tema</button></header>
+<div class="bar" id="bar"></div><div id="app"></div></div>
+<script>
+const D={"areas": ["Finanzas", "Fletes y operaciones", "Presupuesto 2027", "Renta e impuestos"], "items": [{"area": "Finanzas", "titulo": "Presupuesto vs Ejecución · Orion", "desc": "P&G de Orion con ingresos, costos y medidores de ejecución.", "tag": "Acumulado", "href": "../9f170ffb3ce35452c9980ee5/", "upd": "2026-11-12"}, {"area": "Finanzas", "titulo": "Presupuesto vs Ejecución 2026 · Integra", "desc": "P&G de Integra: presupuesto contra real, comparar meses, cuentas y saldos.", "tag": "Acumulado", "href": "../cce94e517d02d24aeca59727/", "upd": "2026-11-18"}, {"area": "Presupuesto 2027", "titulo": "Presupuesto 2027", "desc": "Presupuesto 2027 por empresa, área y cuenta.", "tag": "Presupuesto", "href": "../6c06d5da8f0b9985d43a009c/", "upd": "2026-11-12"}, {"area": "Fletes y operaciones", "titulo": "Validación de tarifas y flota", "desc": "Manifiestos, rutas, ocupación y validación de tarifas.", "tag": "Análisis", "href": "../2970bac30d4043fcd10021e1/", "upd": "2026-11-12"}, {"area": "Fletes y operaciones", "titulo": "Fletes · Semanal", "desc": "Costo de fletes por semana contra presupuesto, por cliente y regional.", "tag": "Semanal", "href": "../0ed0eef4363c1191e7643d55/", "upd": "2026-11-20"}, {"area": "Finanzas", "titulo": "Entidad 2026", "desc": "Real anual de la entidad contra presupuesto (solo Costos totales).", "tag": "Acumulado", "href": "../7a4ae95b82622add07904541/", "upd": "2026-11-18"}, {"area": "Fletes y operaciones", "titulo": "Fletes · Acumulado anual 2026", "desc": "Fletes del año (manifiestos vs contables) contra presupuesto, por mes.", "tag": "Acumulado", "href": "../00636f6c3f37d6cdee8b1a66/", "upd": "2026-11-18"}, {"area": "Presupuesto 2027", "titulo": "Escenarios 2027", "desc": "Escenarios optimista / medio / pesimista, reservas e IPC.", "tag": "Escenarios", "href": "../2722250ac6198dd41a8cf181/", "upd": "2026-11-23"}, {"area": "Renta e impuestos", "titulo": "Renta 2026", "desc": "Provisión de renta 2026: a cargo, a pagar y anticipos.", "tag": "Acumulado", "href": "../a1b52f41b6abe78a4cc90b49/", "upd": "2026-11-26"}, {"area": "Finanzas", "titulo": "Consumo del ingreso 2026", "desc": "Qué % del ingreso consumen proveedores, servicios y personal, impuestos y socios; utilidad. Top 5 y descarga.", "tag": "Acumulado", "href": "../9b17393edf2466871c14a204/", "upd": "2026-11-27"}]};let area="Todas",q="",favs=new Set();
+try{favs=new Set(JSON.parse(localStorage.getItem("favs")||"[]"))}catch(e){}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const AR=["Favoritos",...D.areas];
+function bar(){document.getElementById("bar").innerHTML=["Todas",...AR].map(a=>`<button data-a="${a}" class="${a===area?'on':''}">${a==="Favoritos"?"★ Favoritos":a}</button>`).join("")+`<input id="q" type="search" placeholder="Buscar…" value="${esc(q)}">`;
+ document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{area=b.dataset.a;bar();draw();});
+ const i=document.getElementById("q");i.oninput=()=>{q=i.value;draw();};}
+function card(c){return `<a class="card" href="${c.href}"><button class="fav ${favs.has(c.titulo)?'on':''}" data-f="${esc(c.titulo)}" title="Favorito">★</button><div class="t">${esc(c.titulo)}</div><div class="d">${esc(c.desc)}</div><div class="m"><span class="tag">${esc(c.tag)}</span><span>${c.upd?"Act. "+c.upd:""}</span><span class="go">Abrir →</span></div></a>`}
+function draw(){const s=q.toLowerCase();
+ let it=D.items.filter(c=>(area==="Todas"||(area==="Favoritos"?favs.has(c.titulo):c.area===area))&&(!s||(c.titulo+" "+c.desc+" "+c.tag+" "+c.area).toLowerCase().includes(s)));
+ let h="";if(!it.length)h=`<div class="none">${area==="Favoritos"?"Aún no marcaste favoritos (★).":"Sin resultados."}</div>`;
+ else if(area==="Todas"||area==="Favoritos"||s){D.areas.forEach(a=>{const x=it.filter(c=>c.area===a);if(x.length)h+=`<h2>${a}</h2><div class="grid">${x.map(card).join("")}</div>`})}
+ else h=`<div class="grid">${it.map(card).join("")}</div>`;
+ document.getElementById("app").innerHTML=h;
+ document.querySelectorAll("[data-f]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const t=b.dataset.f;favs.has(t)?favs.delete(t):favs.add(t);try{localStorage.setItem("favs",JSON.stringify([...favs]))}catch(x){}draw();});
+ document.getElementById("sub").textContent=D.items.length+" dashboards · "+D.areas.length+" áreas";}
+document.getElementById("theme").onclick=()=>{const r=document.documentElement,d=r.dataset.theme==="dark"||(!r.dataset.theme&&matchMedia("(prefers-color-scheme:dark)").matches);r.dataset.theme=d?"light":"dark";};
+bar();draw();
+</script><!--dash-version--><div id="dash-version" aria-hidden="true" style="position:fixed;left:8px;bottom:5px;z-index:9999;font:10px/1 system-ui,-apple-system,Segoe UI,sans-serif;letter-spacing:.02em;color:inherit;opacity:.5;pointer-events:none;user-select:none">® DN · v3.0</div><!--/dash-version--></body></html>
