@@ -3,6 +3,7 @@
 # Uso: bash publicar.sh ["mensaje"]      (lee enlaces.tsv: slug <TAB> token <TAB> origen)
 cd "$(dirname "$0")" || exit 1
 python3 generar_portal.py
+PORTAL=$(awk -F"\t" '$1=="portal"{print $2}' enlaces.tsv)
 while IFS=$'\t' read -r slug token src; do
   [ -f "$src" ] || { echo "FALTA: $src"; continue; }
   mkdir -p "$token"
@@ -15,6 +16,7 @@ if 'name="robots"' not in s:
 open(sys.argv[2], 'w', encoding='utf-8').write(s)
 PY
   python3 poner_version.py --version 3.0 "$token/index.html" >/dev/null
+  [ "$slug" != "portal" ] && python3 poner_volver.py "../$PORTAL/" "$token/index.html" >/dev/null
 done < enlaces.tsv
 printf 'User-agent: *\nDisallow: /\n' > robots.txt
 touch .nojekyll
